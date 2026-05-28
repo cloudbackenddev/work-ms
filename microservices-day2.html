@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 4: Distributed Computing Challenges</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,300;1,8..60,400;1,8..60,600;1,8..60,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* === VIEWPORT BASE === */
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#0d1220;}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:#0d1220;}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;}
+.slide.active{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+@media print{html,body{width:1920px;height:auto;overflow:visible;background:#fff;}.deck-viewport{position:static;overflow:visible;}.deck-stage{position:static;width:auto;height:auto;transform:none!important;}.slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;}.slide:last-child{break-after:auto;}.deck-controls{display:none!important;}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2ms!important;}}
+
+/* === SIGNAL DESIGN SYSTEM === */
+:root{
+  --navy:#1C2644;--navy-alt:#232F55;--cream:#F0ECE3;--cream-alt:#E6E0D4;
+  --text-warm:#E2DCD0;--text-muted-dark:#8A96A8;--text-hint-dark:#4E5A6E;
+  --ink:#1A2030;--text-muted-light:#5A6270;--text-hint-light:#9AA0A8;
+  --gold:#C8A870;--border-dark:#2E3D5C;--border-light:#CAC4B4;
+  --pad-x:144px;--pad-y:56px;--gap-lg:40px;--gap-md:24px;--gap-sm:12px;
+  --ff-serif:'Source Serif 4',Georgia,serif;
+  --ff-sans:'DM Sans',system-ui,sans-serif;
+  --ff-mono:'IBM Plex Mono',monospace;
+  --ease-expo:cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* === DARK SLIDE grid texture === */
+.dark-slide::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:80px 80px;pointer-events:none;z-index:0;}
+.dark-slide>*{position:relative;z-index:1;}
+
+/* === CREAM SLIDE — all children get paper background === */
+.cream-slide{background:var(--cream)!important;}
+.cream-slide .chrome-bar{background:var(--cream);border-bottom-color:var(--border-light);}
+.cream-slide .foot-bar{background:var(--cream);border-top-color:var(--border-light);}
+.cream-slide .chrome-label{color:var(--gold);}
+.cream-slide .chrome-counter{color:var(--text-hint-light);}
+.cream-slide .foot-label{color:var(--text-hint-light);}
+.cream-slide .slide-inner{background:var(--cream);}
+.cream-slide .slide-body{background:var(--cream);}
+.cream-slide .col-left{background:var(--cream);}
+.cream-slide .col-right{background:var(--cream-alt);border-left-color:var(--border-light);}
+.cream-slide .two-col{background:var(--cream);}
+.cream-slide .h2{font-size:52px;}
+.cream-slide .bullet-list li{font-size:21px;line-height:1.55;}
+.cream-slide .col-left{gap:20px;}
+
+/* === CHROME BARS === */
+.chrome-bar{display:flex;align-items:center;justify-content:space-between;padding:0 var(--pad-x);height:60px;border-bottom:1px solid var(--border-dark);flex-shrink:0;background:var(--navy);}
+.chrome-label{font-family:var(--ff-mono);font-size:13px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);}
+.chrome-counter{font-family:var(--ff-mono);font-size:13px;letter-spacing:0.1em;color:var(--text-hint-dark);}
+.foot-bar{display:flex;align-items:center;justify-content:space-between;padding:0 var(--pad-x);height:52px;border-top:1px solid var(--border-dark);flex-shrink:0;background:var(--navy);}
+.foot-label{font-family:var(--ff-mono);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-dark);}
+
+/* === LAYOUT === */
+.slide-inner{display:flex;flex-direction:column;height:100%;}
+.slide-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:var(--pad-y) var(--pad-x);gap:var(--gap-md);background:var(--navy);}
+.slide-body.top{justify-content:flex-start;padding-top:44px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden;}
+.two-col.left-wide{grid-template-columns:1.15fr 0.85fr;}
+.two-col.right-wide{grid-template-columns:0.85fr 1.15fr;}
+.col-left{padding:var(--pad-y) var(--pad-x);display:flex;flex-direction:column;justify-content:center;gap:var(--gap-md);background:var(--navy);}
+.col-right{padding:var(--pad-y) var(--pad-x);display:flex;flex-direction:column;justify-content:center;gap:var(--gap-md);background:var(--navy-alt);border-left:1px solid var(--border-dark);}
+
+/* === TYPOGRAPHY === */
+.kicker{font-family:var(--ff-mono);font-size:13px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;}
+.kicker::before{content:'';display:block;width:36px;height:1px;background:var(--gold);flex-shrink:0;}
+.h1{font-family:var(--ff-serif);font-size:96px;font-weight:600;line-height:1.04;letter-spacing:-0.01em;color:var(--text-warm);}
+.h1.ink{color:var(--ink);}.h1 em{font-style:italic;color:var(--gold);}
+.h2{font-family:var(--ff-serif);font-size:56px;font-weight:600;line-height:1.1;letter-spacing:-0.01em;color:var(--text-warm);}
+.h2.ink{color:var(--ink);}.h2 em{font-style:italic;color:var(--gold);}
+.h3{font-family:var(--ff-serif);font-size:34px;font-weight:500;line-height:1.25;color:var(--text-warm);}
+.h3.ink{color:var(--ink);}.h3 em{font-style:italic;color:var(--gold);}
+.lead{font-family:var(--ff-sans);font-size:24px;font-weight:400;line-height:1.55;color:var(--text-muted-dark);}
+.lead.ink{color:var(--text-muted-light);}.lead em{font-family:var(--ff-serif);font-style:italic;color:var(--gold);}
+.body-t{font-family:var(--ff-sans);font-size:19px;font-weight:400;line-height:1.6;color:var(--text-muted-dark);}
+.body-t.ink{color:var(--text-muted-light);}
+.caption{font-family:var(--ff-sans);font-size:15px;color:var(--text-hint-dark);line-height:1.5;}
+.caption.ink{color:var(--text-hint-light);}
+.gold-rule{width:36px;height:1px;background:var(--gold);flex-shrink:0;}
+
+/* === BULLET LIST — flex, no grid === */
+.blist{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.blist li{display:flex;align-items:baseline;gap:14px;font-family:var(--ff-sans);font-size:22px;line-height:1.5;color:var(--text-muted-dark);}
+.blist.ink li{color:var(--text-muted-light);}
+.blist li::before{content:'—';font-family:var(--ff-mono);color:var(--gold);font-size:13px;flex-shrink:0;line-height:1.55;}
+.blist li strong{font-weight:500;color:var(--text-warm);display:inline;}
+.blist.ink li strong{color:var(--ink);display:inline;}
+.blist.sm li{font-size:19px;}
+.blist.xs li{font-size:17px;}
+
+/* === TABLE === */
+.sig-table{width:100%;border-collapse:collapse;font-family:var(--ff-sans);font-size:18px;}
+.sig-table th{font-family:var(--ff-mono);font-size:12px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);text-align:left;padding:12px 18px;border-bottom:1px solid var(--border-dark);}
+.sig-table.light th{border-bottom-color:var(--border-light);}
+.sig-table td{padding:11px 18px;border-bottom:1px solid var(--border-dark);color:var(--text-muted-dark);vertical-align:top;line-height:1.45;}
+.sig-table.light td{border-bottom-color:var(--border-light);color:var(--text-muted-light);}
+.sig-table td:first-child{font-family:var(--ff-mono);font-size:12px;letter-spacing:0.08em;color:var(--gold);white-space:nowrap;}
+.sig-table tr:last-child td{border-bottom:none;}
+.sig-table td strong{color:var(--text-warm);font-weight:500;}
+.sig-table.light td strong{color:var(--ink);}
+
+/* === CODE BLOCK === */
+.code-block::-webkit-scrollbar{height:4px;background:transparent;}
+.code-block::-webkit-scrollbar-thumb{background:var(--border-dark);border-radius:2px;}
+.code-block{background:#0D1520;border:1px solid var(--border-dark);padding:20px 24px;font-family:var(--ff-mono);font-size:14px;line-height:1.8;color:#B8C4D4;overflow-x:auto;white-space:pre;word-break:normal;}
+.code-block.sm{font-size:12.5px;padding:14px 20px;white-space:pre;overflow-x:auto;word-break:normal;}
+.cc{color:var(--text-hint-dark);}
+.ck{color:var(--gold);}
+.cv{color:#7EC8A4;}
+.cn{color:#9ECBFF;}
+.ca{color:#E07070;}
+
+/* === SECTION DIVIDER === */
+.section-divider{background:var(--navy);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 var(--pad-x);gap:var(--gap-md);}
+.section-num{font-family:var(--ff-mono);font-size:110px;font-weight:500;letter-spacing:-0.02em;color:rgba(200,168,112,0.15);line-height:1;}
+.section-title{font-family:var(--ff-serif);font-size:96px;font-weight:600;line-height:1.04;letter-spacing:-0.01em;color:var(--text-warm);}
+.section-title em{font-style:italic;color:var(--gold);}
+.section-sub{font-family:var(--ff-sans);font-size:24px;color:var(--text-muted-dark);max-width:900px;}
+
+/* === CARD GRID === */
+.card-row{display:flex;gap:1px;background:var(--border-dark);flex:1;}
+.card-col{background:var(--navy);padding:40px 44px;display:flex;flex-direction:column;gap:14px;flex:1;}
+.card-col.alt{background:var(--navy-alt);}
+.card-col.cream-card{background:var(--cream);border-right:1px solid var(--border-light);}
+.card-col.cream-alt-card{background:var(--cream-alt);}
+.card-title{font-family:var(--ff-serif);font-size:30px;font-weight:600;color:var(--text-warm);line-height:1.2;}
+.card-title.ink{color:var(--ink);}
+.card-title em{font-style:italic;color:var(--gold);}
+.card-body{font-family:var(--ff-sans);font-size:18px;line-height:1.6;color:var(--text-muted-dark);}
+.card-body.ink{color:var(--text-muted-light);}
+.card-num{font-family:var(--ff-mono);font-size:13px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+
+/* === TAG === */
+.tag{display:inline-block;border:1px solid var(--gold);color:var(--gold);font-family:var(--ff-mono);font-size:12px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;padding:5px 14px;}
+.tag.warn{border-color:#E07070;color:#E07070;}
+
+/* === REVEAL ANIMATIONS === */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity 0.6s var(--ease-expo),transform 0.6s var(--ease-expo);}
+.slide.active .reveal{opacity:1;transform:translateY(0);}
+.slide.active .reveal:nth-child(1){transition-delay:0.07s;}
+.slide.active .reveal:nth-child(2){transition-delay:0.16s;}
+.slide.active .reveal:nth-child(3){transition-delay:0.25s;}
+.slide.active .reveal:nth-child(4){transition-delay:0.34s;}
+.slide.active .reveal:nth-child(5){transition-delay:0.43s;}
+.slide.active .reveal:nth-child(6){transition-delay:0.52s;}
+.slide.active .reveal:nth-child(7){transition-delay:0.60s;}
+.slide.active .reveal:nth-child(8){transition-delay:0.68s;}
+.reveal-fade{opacity:0;transition:opacity 0.75s var(--ease-expo);}
+.slide.active .reveal-fade{opacity:1;}
+.slide.active .reveal-fade:nth-child(1){transition-delay:0.1s;}
+.slide.active .reveal-fade:nth-child(2){transition-delay:0.25s;}
+.slide.active .reveal-fade:nth-child(3){transition-delay:0.4s;}
+.slide.active .reveal-fade:nth-child(4){transition-delay:0.55s;}
+
+/* === DECK CONTROLS === */
+.deck-controls{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;align-items:center;gap:10px;}
+.nav-btn{background:rgba(28,38,68,0.88);border:1px solid var(--border-dark);color:var(--text-muted-dark);font-family:var(--ff-mono);font-size:12px;letter-spacing:0.1em;padding:7px 18px;cursor:pointer;transition:color 0.2s,border-color 0.2s;backdrop-filter:blur(8px);}
+.nav-btn:hover{color:var(--gold);border-color:var(--gold);}
+.slide-counter-ui{font-family:var(--ff-mono);font-size:11px;letter-spacing:0.14em;color:var(--text-hint-dark);min-width:56px;text-align:center;}
+
+/* === INLINE EDIT === */
+.edit-hotzone{position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;}
+.edit-toggle{position:fixed;top:14px;left:14px;z-index:10001;background:rgba(28,38,68,0.9);border:1px solid var(--border-dark);color:var(--text-muted-dark);font-size:15px;width:38px;height:38px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(8px);}
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+.edit-toggle.active{color:var(--gold);border-color:var(--gold);}
+[contenteditable="true"]{outline:1px dashed rgba(200,168,112,0.4);}
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+<!-- ===== SLIDE 1 — TITLE (dark) ===== -->
+<section class="slide dark-slide active" id="s1" style="background:var(--navy);">
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);z-index:2;"></div>
+  <div style="display:flex;height:100%;">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 var(--pad-x);gap:var(--gap-md);">
+      <div class="kicker reveal">Module 04 · Java Engineering Track</div>
+      <h1 class="h1 reveal" style="font-size:88px;line-height:0.97;">Distributed<br>Computing <em>Challenges</em></h1>
+      <div class="gold-rule reveal"></div>
+      <p class="lead reveal">Failure, Consistency, and Observability at Scale</p>
+      <p class="reveal" style="font-family:var(--ff-serif);font-style:italic;font-size:22px;color:var(--text-hint-dark);max-width:780px;line-height:1.5;border-left:2px solid var(--gold);padding-left:20px;margin-top:8px;">"In a monolith, things fail loudly. In microservices, they fail silently, slowly, and sideways."</p>
+      <div style="display:flex;gap:48px;margin-top:8px;" class="reveal">
+        <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-hint-dark);">Duration</span><span style="font-family:var(--ff-sans);font-size:19px;color:var(--text-warm);">90 minutes</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-hint-dark);">Slides</span><span style="font-family:var(--ff-sans);font-size:19px;color:var(--text-warm);">22 slides</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-hint-dark);">Module</span><span style="font-family:var(--ff-sans);font-size:19px;color:var(--text-warm);">4 of 6</span></div>
+      </div>
+    </div>
+    <div style="width:500px;border-left:1px solid var(--border-dark);display:flex;flex-direction:column;justify-content:center;padding:0 52px;gap:16px;" class="reveal-fade">
+      <div style="font-family:var(--ff-serif);font-size:150px;font-weight:600;color:rgba(200,168,112,0.1);line-height:1;letter-spacing:-0.04em;">04</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:-16px;">
+        <div style="display:flex;align-items:center;gap:12px;font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Why distributed is different</div>
+        <div style="display:flex;align-items:center;gap:12px;font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Resilience patterns</div>
+        <div style="display:flex;align-items:center;gap:12px;font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Distributed data &amp; Sagas</div>
+        <div style="display:flex;align-items:center;gap:12px;font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Observability</div>
+        <div style="display:flex;align-items:center;gap:12px;font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>CAP theorem</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 2 — AGENDA (cream) ===== -->
+<section class="slide cream-slide" id="s2" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Agenda</span><span class="chrome-counter">02 / 22</span></div>
+    <div class="slide-body top">
+      <div class="kicker reveal">What we'll cover in 90 minutes</div>
+      <h2 class="h2 ink reveal">Six topics, <em>one hard truth</em></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border-light);background:var(--border-light);margin-top:8px;" class="reveal">
+        <div style="padding:20px 28px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;gap:16px;align-items:flex-start;background:var(--cream);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.2;">01</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">Why distributed is fundamentally different</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">The fallacies &amp; what the monolith gave you for free</div></div></div>
+        <div style="padding:20px 28px;border-bottom:1px solid var(--border-light);display:flex;gap:16px;align-items:flex-start;background:var(--cream-alt);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.2;">02</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">Failure &amp; resilience</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Circuit breakers, retries, timeouts</div></div></div>
+        <div style="padding:20px 28px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;gap:16px;align-items:flex-start;background:var(--cream-alt);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.2;">03</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">Distributed data</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Why transactions don't work across services</div></div></div>
+        <div style="padding:20px 28px;border-bottom:1px solid var(--border-light);display:flex;gap:16px;align-items:flex-start;background:var(--cream);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.2;">04</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">The Saga pattern</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Managing consistency without a transaction</div></div></div>
+        <div style="padding:20px 28px;border-right:1px solid var(--border-light);display:flex;gap:16px;align-items:flex-start;background:var(--cream);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.2;">05</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">Observability</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Logs, metrics, and distributed tracing</div></div></div>
+        <div style="padding:20px 28px;display:flex;gap:16px;align-items:flex-start;background:var(--cream-alt);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.2;">06</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">The CAP theorem</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">The hard tradeoff every distributed system makes</div></div></div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 3 — FALLACIES (dark, table) ===== -->
+<section class="slide dark-slide" id="s3" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Why Distributed is Different</span><span class="chrome-counter">03 / 22</span></div>
+    <div class="slide-body top" style="padding-top:36px;">
+      <div class="kicker reveal">L. Peter Deutsch &amp; James Gosling, Sun Microsystems, 1990s</div>
+      <h2 class="h2 reveal">Eight things engineers <em>wrongly assume</em></h2>
+      <table class="sig-table reveal" style="margin-top:8px;">
+        <thead><tr><th>#</th><th>Fallacy</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>The network is reliable</strong></td><td>Packets drop, connections time out, cables get unplugged</td></tr>
+          <tr><td>2</td><td><strong>Latency is zero</strong></td><td>Every network hop adds milliseconds. Across services, they multiply</td></tr>
+          <tr><td>3</td><td><strong>Bandwidth is infinite</strong></td><td>Chatty services degrade each other under load</td></tr>
+          <tr><td>4</td><td><strong>The network is secure</strong></td><td>Services talk over a network — assume hostile traffic</td></tr>
+          <tr><td>5</td><td><strong>Topology doesn't change</strong></td><td>Pods restart, IPs change, nodes fail — the network is always shifting</td></tr>
+          <tr><td>6</td><td><strong>There is one administrator</strong></td><td>In microservices, no single team owns the whole system</td></tr>
+          <tr><td>7</td><td><strong>Transport cost is zero</strong></td><td>Serialization, deserialization, and HTTP overhead are real costs</td></tr>
+          <tr><td>8</td><td><strong>The network is homogeneous</strong></td><td>Services may run in different clouds, regions, or runtimes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 4 — MONOLITH vs MICROSERVICES (cream, comparison table) ===== -->
+<section class="slide cream-slide" id="s4" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Why Distributed is Different</span><span class="chrome-counter">04 / 22</span></div>
+    <div class="slide-body top">
+      <div class="kicker reveal">The honest conversation</div>
+      <h2 class="h2 ink reveal">The monolith gave you things <em>for free</em>. Microservices take them away.</h2>
+      <table class="sig-table light reveal" style="margin-top:8px;">
+        <thead><tr><th>In a monolith you got…</th><th>In microservices you must build…</th></tr></thead>
+        <tbody>
+          <tr><td>One process — no network calls between modules</td><td><strong>Network calls everywhere</strong> — each one can fail</td></tr>
+          <tr><td>ACID transactions across all your data</td><td><strong>No cross-service transactions</strong> — eventual consistency only</td></tr>
+          <tr><td>A single log file to grep</td><td><strong>Logs scattered</strong> across dozens of services and pods</td></tr>
+          <tr><td>One call stack in your debugger</td><td><strong>A request spanning 6 services</strong> — no single stack trace</td></tr>
+          <tr><td>A shared in-memory cache</td><td><strong>No shared memory</strong> — each instance is isolated</td></tr>
+          <tr><td>Compiler catches interface mismatches</td><td><strong>Runtime failures</strong> when service contracts break</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 5 — FAILURE MODES (dark, 4 scenario cards) ===== -->
+<section class="slide dark-slide" id="s5" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Why Distributed is Different</span><span class="chrome-counter">05 / 22</span></div>
+    <div style="padding:28px var(--pad-x) 0;flex-shrink:0;" class="reveal">
+      <h2 class="h2">How microservices <em>fail</em> — and why it's subtle</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border-dark);flex:1;margin-top:20px;" class="reveal-fade">
+      <div style="background:var(--navy);padding:28px 36px;border-bottom:1px solid var(--border-dark);border-right:1px solid var(--border-dark);">
+        <div class="card-num">Scenario A — Slow dependency</div>
+        <div class="card-title" style="font-size:22px;margin-bottom:10px;">Not dead, just <em>slow</em></div>
+        <div class="card-body" style="font-size:17px;">Service B takes 30s to respond. A's threads pile up waiting. A runs out of threads. A stops responding to its own callers. C, which calls A, also freezes. B caused it — but A looked like the failure.</div>
+      </div>
+      <div style="background:var(--navy-alt);padding:28px 36px;border-bottom:1px solid var(--border-dark);">
+        <div class="card-num">Scenario B — Partial failure</div>
+        <div class="card-title" style="font-size:22px;margin-bottom:10px;">Accepts requests, <em>fails at the DB</em></div>
+        <div class="card-body" style="font-size:17px;">Payment service is up, but its DB connection pool is exhausted. It accepts requests, processes them, then fails at the write. Callers see a 500. The service looks healthy from the outside.</div>
+      </div>
+      <div style="background:var(--navy-alt);padding:28px 36px;border-right:1px solid var(--border-dark);">
+        <div class="card-num">Scenario C — Network partition</div>
+        <div class="card-title" style="font-size:22px;margin-bottom:10px;">Two instances, <em>inconsistent data</em></div>
+        <div class="card-body" style="font-size:17px;">Two inventory instances can talk to clients but not each other. Both accept stock updates. When the partition heals, data is inconsistent. Neither instance knew it was wrong.</div>
+      </div>
+      <div style="background:var(--navy);padding:28px 36px;">
+        <div class="card-num">Scenario D — Clock drift</div>
+        <div class="card-title" style="font-size:22px;margin-bottom:10px;">400ms apart — <em>log correlation breaks</em></div>
+        <div class="card-body" style="font-size:17px;">Two services timestamp events using their system clock. The clocks are 400ms apart. "A happened before B" is no longer reliable. Debugging becomes archaeology.</div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+<!-- ===== SLIDE 6 — SECTION DIVIDER: Resilience Patterns ===== -->
+<section class="slide dark-slide section-divider" id="s6">
+  <div class="section-num reveal">02</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal"><em>Resilience</em> Patterns</h2>
+  <p class="section-sub reveal">Timeouts · Retries · Circuit Breakers</p>
+</section>
+
+<!-- ===== SLIDE 7 — THREE PRIMITIVES (dark, 3-card row) ===== -->
+<section class="slide dark-slide" id="s7" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Resilience Patterns</span><span class="chrome-counter">07 / 22</span></div>
+    <div style="padding:28px var(--pad-x) 0;flex-shrink:0;" class="reveal">
+      <h2 class="h2">Three tools <em>every service</em> needs</h2>
+    </div>
+    <div class="card-row reveal-fade" style="margin-top:20px;">
+      <div class="card-col">
+        <div class="card-num">01 — Timeout</div>
+        <div class="card-title"><em>Set a deadline</em> on every call</div>
+        <div class="card-body">Every outbound call must have a deadline. If the dependency doesn't respond in N ms, give up and handle the failure. Without a timeout, one slow dependency exhausts all your threads.</div>
+        <div style="margin-top:auto;padding-top:14px;">
+          <div class="code-block sm"><span class="cc">// WebClient</span>
+<span class="ck">.timeout</span>(<span class="cv">Duration.ofMillis(500)</span>)</div>
+        </div>
+      </div>
+      <div class="card-col alt">
+        <div class="card-num">02 — Retry</div>
+        <div class="card-title"><em>Transient failures</em> often self-heal</div>
+        <div class="card-body">Brief network blips and restarting pods often resolve on the next attempt. Retry automatically — but with limits: max attempts, exponential backoff, and jitter to avoid thundering herd.</div>
+        <div style="margin-top:auto;padding-top:14px;">
+          <div class="code-block sm"><span class="ca">@Retry</span>(<span class="ck">name</span> = <span class="cv">"payment-service"</span>)
+<span class="cc">// configure in application.yml</span></div>
+        </div>
+      </div>
+      <div class="card-col">
+        <div class="card-num">03 — Circuit Breaker</div>
+        <div class="card-title"><em>Stop calling</em> what's broken</div>
+        <div class="card-body">If a dependency is consistently failing, stop calling it. Open the circuit, return a fallback immediately, and probe periodically to check recovery. Protects threads, prevents cascade.</div>
+        <div style="margin-top:auto;padding-top:14px;">
+          <div class="code-block sm"><span class="ca">@CircuitBreaker</span>(<span class="ck">name</span> = <span class="cv">"payment-service"</span>,
+  <span class="ck">fallbackMethod</span> = <span class="cv">"paymentFallback"</span>)</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 8 — CIRCUIT BREAKER DEEP DIVE (cream, state machine + config) ===== -->
+<section class="slide cream-slide" id="s8" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Resilience Patterns</span><span class="chrome-counter">08 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">State machine</div>
+        <h2 class="h2 ink reveal">How a circuit breaker <em>actually works</em></h2>
+        <!-- State machine diagram -->
+        <div style="display:flex;flex-direction:column;gap:0;margin-top:8px;" class="reveal">
+          <div style="display:flex;align-items:center;gap:0;">
+            <div style="border:1.5px solid var(--gold);background:rgba(200,168,112,0.1);padding:12px 24px;font-family:var(--ff-mono);font-size:15px;color:var(--gold);letter-spacing:0.08em;min-width:130px;text-align:center;">CLOSED</div>
+            <div style="flex:1;height:1px;background:var(--border-light);position:relative;"><span style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-family:var(--ff-sans);font-size:12px;color:var(--text-hint-light);white-space:nowrap;">50% failures in 10 calls</span></div>
+            <div style="border:1.5px solid var(--ca,#E07070);background:rgba(224,112,112,0.08);padding:12px 24px;font-family:var(--ff-mono);font-size:15px;color:#E07070;letter-spacing:0.08em;min-width:110px;text-align:center;">OPEN</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;padding-right:0;">
+            <div style="width:1px;height:32px;background:var(--border-light);margin-right:55px;"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0;justify-content:flex-end;">
+            <div style="border:1.5px solid var(--border-light);background:var(--cream-alt);padding:12px 24px;font-family:var(--ff-mono);font-size:15px;color:var(--text-muted-light);letter-spacing:0.08em;min-width:140px;text-align:center;">HALF-OPEN</div>
+            <div style="width:40px;height:1px;background:var(--border-light);"></div>
+            <div style="font-family:var(--ff-sans);font-size:12px;color:var(--text-hint-light);white-space:nowrap;padding-left:8px;">wait 30s elapsed</div>
+          </div>
+        </div>
+        <ul class="blist ink sm reveal" style="margin-top:16px;">
+          <li><strong>CLOSED:</strong> All calls go through. Failures are counted.</li>
+          <li><strong>OPEN:</strong> All calls fail immediately with fallback. No requests sent.</li>
+          <li><strong>HALF-OPEN:</strong> A few probe calls test recovery.</li>
+        </ul>
+      </div>
+      <div class="col-right">
+        <div class="kicker reveal" style="color:var(--gold);">Spring Boot config</div>
+        <div class="code-block reveal" style="font-size:14px;line-height:1.8;">
+<span class="ck">resilience4j</span>:
+  <span class="ck">circuitbreaker</span>:
+    <span class="ck">instances</span>:
+      <span class="ck">payment-service</span>:
+        <span class="ck">slidingWindowSize</span>: <span class="cv">10</span>
+        <span class="ck">failureRateThreshold</span>: <span class="cv">50</span>
+        <span class="ck">waitDurationInOpenState</span>: <span class="cv">30s</span>
+        <span class="ck">permittedNumberOfCallsInHalfOpenState</span>: <span class="cv">3</span>
+        </div>
+        <div style="border-top:1px solid var(--border-dark);padding-top:16px;margin-top:8px;" class="reveal">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Key insight</div>
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:19px;color:var(--text-muted-dark);line-height:1.5;">OPEN state means your service is protecting itself by failing fast — keeping threads free for requests that CAN succeed.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 9 — CODE: CIRCUIT BREAKER IN SPRING BOOT (dark) ===== -->
+<section class="slide dark-slide" id="s9" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Resilience Patterns</span><span class="chrome-counter">09 / 22</span></div>
+    <div class="two-col right-wide" style="flex:1;">
+      <div class="col-left" style="gap:16px;">
+        <div class="kicker reveal">Resilience4j in practice</div>
+        <h2 class="h2 reveal" style="font-size:38px;">Circuit breaker <em>in code</em></h2>
+        <div class="reveal" style="margin-top:4px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Step 1 — pom.xml</div>
+          <div class="code-block sm"><span class="cc">&lt;!-- resilience4j --&gt;</span>
+<span class="ck">&lt;dependency&gt;</span>
+  <span class="cn">&lt;groupId&gt;</span>io.github.resilience4j<span class="cn">&lt;/groupId&gt;</span>
+  <span class="cn">&lt;artifactId&gt;</span>resilience4j-spring-boot3<span class="cn">&lt;/artifactId&gt;</span>
+<span class="ck">&lt;/dependency&gt;</span>
+<span class="cc">&lt;!-- required for AOP proxying --&gt;</span>
+<span class="ck">&lt;dependency&gt;</span>
+  <span class="cn">&lt;groupId&gt;</span>org.springframework.boot<span class="cn">&lt;/groupId&gt;</span>
+  <span class="cn">&lt;artifactId&gt;</span>spring-boot-starter-aop<span class="cn">&lt;/artifactId&gt;</span>
+<span class="ck">&lt;/dependency&gt;</span></div>
+        </div>
+        <div class="reveal">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Step 3 — fallback contract</div>
+          <p class="body-t" style="font-size:17px;">Don't just throw in the fallback. Return something meaningful: a default value, a cached result, a "pending" status, or queue the work for retry. The fallback is your contract with the caller when the dependency is unavailable.</p>
+        </div>
+      </div>
+      <div class="col-right" style="gap:16px;">
+        <div class="kicker reveal" style="color:var(--gold);">Step 2 — annotate the call</div>
+        <div class="code-block reveal" style="font-size:13px;line-height:1.75;"><span class="ca">@Service</span>
+<span class="ck">public class</span> OrderService {
+
+  <span class="ca">@CircuitBreaker</span>(
+    <span class="ck">name</span> = <span class="cv">"payment-service"</span>,
+    <span class="ck">fallbackMethod</span> = <span class="cv">"paymentFallback"</span>)
+  <span class="ca">@Retry</span>(<span class="ck">name</span> = <span class="cv">"payment-service"</span>)
+  <span class="ck">public</span> PaymentResponse <span class="cv">chargeCustomer</span>(
+      OrderRequest order) {
+    <span class="cc">// remote call</span>
+    <span class="ck">return</span> paymentClient.charge(order);
+  }
+
+  <span class="cc">// Called when OPEN or retries exhausted</span>
+  <span class="ck">private</span> PaymentResponse <span class="cv">paymentFallback</span>(
+      OrderRequest order, Exception ex) {
+    log.warn(<span class="cv">"Payment unavailable: {}"</span>,
+             ex.getMessage());
+    <span class="ck">return</span> PaymentResponse
+             .queued(order.getId());
+  }
+}</div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 10 — BULKHEAD & RATE LIMITER (cream, two-col) ===== -->
+<section class="slide cream-slide" id="s10" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Resilience Patterns</span><span class="chrome-counter">10 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">Bonus pattern 1</div>
+        <h2 class="h2 ink reveal" style="font-size:46px;"><em>Bulkhead</em></h2>
+        <p class="lead ink reveal" style="font-size:20px;">Isolates thread pools per dependency. Even if payment-service calls pile up, they consume threads from a separate pool — order-service's own thread pool stays free.</p>
+        <p class="body-t ink reveal" style="font-size:17px;">Think of ship bulkheads: one compartment floods, the others stay dry.</p>
+        <div class="reveal" style="margin-top:8px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-light);margin-bottom:6px;">When to use</div>
+          <p style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-light);">When one slow dependency must not starve all other operations.</p>
+          <div class="code-block sm" style="margin-top:10px;"><span class="ca">@Bulkhead</span>(<span class="ck">name</span> = <span class="cv">"payment-service"</span>,
+  <span class="ck">type</span> = THREADPOOL)</div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="kicker reveal" style="color:var(--gold);">Bonus pattern 2</div>
+        <h2 class="h2 reveal" style="font-size:46px;color:var(--text-warm);"><em>Rate Limiter</em></h2>
+        <p class="lead reveal" style="font-size:20px;color:var(--text-muted-dark);">Caps how many calls your service makes to a downstream in a given time window. Prevents overwhelming a dependency that has its own limits.</p>
+        <p class="body-t reveal" style="font-size:17px;color:var(--text-muted-dark);">Also used at the API Gateway to protect your own services from abusive clients.</p>
+        <div class="reveal" style="margin-top:8px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">When to use</div>
+          <p style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);">Calling third-party APIs with rate limits (Stripe, Twilio) or protecting a slow internal service.</p>
+          <div class="code-block sm" style="margin-top:10px;"><span class="ca">@RateLimiter</span>(<span class="ck">name</span> = <span class="cv">"payment-service"</span>)</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+<!-- ===== SLIDE 11 — SECTION DIVIDER: Distributed Data ===== -->
+<section class="slide dark-slide section-divider" id="s11">
+  <div class="section-num reveal">03</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal"><em>Distributed</em> Data</h2>
+  <p class="section-sub reveal">Why you can't use transactions across services — and what to do instead</p>
+</section>
+
+<!-- ===== SLIDE 12 — DATABASE PER SERVICE (cream, two-col) ===== -->
+<section class="slide cream-slide" id="s12" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Distributed Data</span><span class="chrome-counter">12 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">The rule</div>
+        <h2 class="h2 ink reveal">Each service owns its data. <em>Full stop.</em></h2>
+        <ul class="blist ink sm reveal">
+          <li>Each microservice has its own database or schema</li>
+          <li>No other service queries it directly — only via the service's <strong>API</strong></li>
+          <li>Enforces the service boundary at the <strong>data layer</strong></li>
+          <li>Enables independent schema evolution — order-service can add a column without touching user-service</li>
+          <li>Enables <strong>polyglot persistence</strong> — each service picks the right DB for its needs</li>
+        </ul>
+        <div class="reveal" style="margin-top:12px;border-top:1px solid var(--border-light);padding-top:12px;">
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:19px;color:var(--text-muted-light);line-height:1.5;">This is the rule most teams break first — usually out of convenience ("I'll just do a JOIN"). The short-term gain is a long-term coupling that prevents independent deployment.</p>
+        </div>
+      </div>
+      <div class="col-right" style="align-items:center;justify-content:center;gap:20px;">
+        <div class="reveal-fade" style="width:100%;display:flex;flex-direction:column;gap:0;align-items:center;">
+          <!-- Services row -->
+          <div style="display:flex;gap:16px;justify-content:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+              <div style="border:1px solid var(--border-dark);background:var(--navy-alt);padding:10px 18px;font-family:var(--ff-mono);font-size:13px;color:var(--text-warm);text-align:center;min-width:140px;">user-service</div>
+              <div style="width:1px;height:20px;background:var(--border-dark);"></div>
+              <div style="border:1px dashed var(--border-dark);padding:8px 14px;font-family:var(--ff-mono);font-size:12px;color:var(--text-hint-dark);text-align:center;">users_db<br><span style="font-size:11px;color:var(--text-hint-dark);">PostgreSQL</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+              <div style="border:1px solid var(--border-dark);background:var(--navy-alt);padding:10px 18px;font-family:var(--ff-mono);font-size:13px;color:var(--text-warm);text-align:center;min-width:140px;">order-service</div>
+              <div style="width:1px;height:20px;background:var(--border-dark);"></div>
+              <div style="border:1px dashed var(--border-dark);padding:8px 14px;font-family:var(--ff-mono);font-size:12px;color:var(--text-hint-dark);text-align:center;">orders_db<br><span style="font-size:11px;color:var(--text-hint-dark);">PostgreSQL</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+              <div style="border:1px solid var(--border-dark);background:var(--navy-alt);padding:10px 18px;font-family:var(--ff-mono);font-size:13px;color:var(--text-warm);text-align:center;min-width:140px;">payment-service</div>
+              <div style="width:1px;height:20px;background:var(--border-dark);"></div>
+              <div style="border:1px dashed var(--border-dark);padding:8px 14px;font-family:var(--ff-mono);font-size:12px;color:var(--text-hint-dark);text-align:center;">payments_db<br><span style="font-size:11px;color:var(--text-hint-dark);">MySQL</span></div>
+            </div>
+          </div>
+          <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;width:100%;">
+            <div style="display:flex;align-items:center;gap:10px;font-family:var(--ff-sans);font-size:15px;color:#E07070;"><span style="font-family:var(--ff-mono);font-size:14px;">&#x274C;</span> order-service cannot SELECT from users_db directly</div>
+            <div style="display:flex;align-items:center;gap:10px;font-family:var(--ff-sans);font-size:15px;color:#7EC8A4;"><span style="font-family:var(--ff-mono);font-size:14px;">&#x2705;</span> order-service calls user-service's REST API</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 13 — DISTRIBUTED TRANSACTION PROBLEM (dark) ===== -->
+<section class="slide dark-slide" id="s13" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Distributed Data</span><span class="chrome-counter">13 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left" style="gap:16px;">
+        <div class="kicker reveal">The core problem</div>
+        <h2 class="h2 reveal" style="font-size:46px;">Why ACID transactions <em>don't work</em> across services</h2>
+        <p class="lead reveal" style="font-size:20px;">A customer places an order. Three things must happen atomically:</p>
+        <ul class="blist reveal" style="font-size:19px;">
+          <li>Reserve stock in <strong>inventory-service</strong></li>
+          <li>Charge the customer in <strong>payment-service</strong></li>
+          <li>Create the order record in <strong>order-service</strong></li>
+        </ul>
+        <div class="reveal" style="border:1px solid #E07070;background:rgba(224,112,112,0.06);padding:16px 20px;margin-top:8px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#E07070;margin-bottom:8px;">The problem</div>
+          <p style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">If payment succeeds but inventory reservation fails, you have charged the customer for something you can't fulfil. There is no rollback across services.</p>
+        </div>
+      </div>
+      <div class="col-right" style="gap:16px;">
+        <div class="kicker reveal" style="color:var(--gold);">In a monolith</div>
+        <div class="code-block reveal" style="font-size:14px;line-height:1.8;">
+<span class="ck">BEGIN TRANSACTION</span>
+  <span class="cv">INSERT INTO</span> orders ...
+  <span class="cv">UPDATE</span> inventory
+    <span class="cv">SET</span> stock = stock - 1 ...
+  <span class="cv">INSERT INTO</span> payments ...
+<span class="ck">COMMIT</span>  <span class="cc">-- all or nothing</span>
+        </div>
+        <div class="kicker reveal" style="color:#E07070;margin-top:8px;">In microservices</div>
+        <div class="code-block reveal" style="font-size:14px;line-height:1.8;border-color:#E07070;">
+<span class="cc">// No shared transaction.</span>
+<span class="cc">// Each service has its own DB.</span>
+<span class="cc">// 2PC exists but is fragile,</span>
+<span class="cc">// slow, and avoided in practice.</span>
+
+<span class="cc">// Instead: design for</span>
+<span class="ca">// eventual consistency</span>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 14 — SAGA PATTERN (dark, two-col flows) ===== -->
+<section class="slide dark-slide" id="s14" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Distributed Data</span><span class="chrome-counter">14 / 22</span></div>
+    <div style="padding:24px var(--pad-x) 0;flex-shrink:0;" class="reveal">
+      <h2 class="h2" style="font-size:48px;">Sagas: consistency <em>without</em> a transaction</h2>
+      <p class="lead" style="font-size:19px;margin-top:8px;">A sequence of local transactions. Each step publishes an event. If a step fails, <em>compensating transactions</em> undo previous steps.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-dark);flex:1;margin-top:16px;" class="reveal-fade">
+      <div style="background:var(--navy);padding:24px 32px;">
+        <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Choreography — event-driven</div>
+        <div class="code-block sm" style="font-size:13px;line-height:1.9;">
+<span class="cv">order-service</span>     → publishes: <span class="ck">OrderCreated</span>
+<span class="cv">inventory-service</span> → reserves stock
+                  → publishes: <span class="ck">StockReserved</span>
+<span class="cv">payment-service</span>   → charges card
+                  → publishes: <span class="ck">PaymentCharged</span>
+<span class="cv">order-service</span>     → confirms order
+
+<span class="cc">On failure:</span>
+<span class="cv">payment-service</span>   → publishes: <span class="ca">PaymentFailed</span>
+<span class="cv">inventory-service</span> → releases stock
+<span class="cv">order-service</span>     → cancels order
+        </div>
+        <p style="font-family:var(--ff-sans);font-size:15px;color:var(--text-hint-dark);margin-top:10px;">Services don't know each other. Hard to see overall flow. Best for simple, linear flows.</p>
+      </div>
+      <div style="background:var(--navy-alt);padding:24px 32px;">
+        <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Orchestration — central coordinator</div>
+        <div class="code-block sm" style="font-size:13px;line-height:1.9;">
+<span class="cv">SagaOrchestrator</span>:
+  Step 1 → <span class="ck">inventory.reserve()</span>
+    ↳ fail → STOP
+  Step 2 → <span class="ck">payment.charge()</span>
+    ↳ fail → <span class="ca">inventory.release()</span> → STOP
+  Step 3 → <span class="ck">order.confirm()</span>
+    ↳ fail → <span class="ca">payment.refund()</span>
+           + <span class="ca">inventory.release()</span>
+        </div>
+        <p style="font-family:var(--ff-sans);font-size:15px;color:var(--text-hint-dark);margin-top:10px;">Central place to observe and debug. Best for complex flows with many branches.</p>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 15 — IDEMPOTENCY (cream, two-col) ===== -->
+<section class="slide cream-slide" id="s15" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Distributed Data</span><span class="chrome-counter">15 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">The unsung hero</div>
+        <h2 class="h2 ink reveal" style="font-size:46px;">Every mutation must be <em>safe to call twice</em></h2>
+        <p class="lead ink reveal" style="font-size:20px;">Retries are everywhere — client retries, Resilience4j, message queue redeliveries. If your endpoint is not idempotent, a retry creates a double charge or duplicate order.</p>
+        <ul class="blist ink sm reveal">
+          <li>Client generates a unique <strong>idempotency-key</strong> (UUID) per operation</li>
+          <li>Server stores (key → result) in a database</li>
+          <li>On duplicate request: return the stored result, don't re-execute</li>
+        </ul>
+        <div class="reveal" style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:10px;">
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:18px;color:var(--text-muted-light);line-height:1.5;">Stripe has done this since day one. Every mutation endpoint requires an Idempotency-Key. It's why Stripe can safely retry failed payment requests without double-charging.</p>
+        </div>
+      </div>
+      <div class="col-right" style="gap:14px;">
+        <div class="kicker reveal" style="color:var(--gold);">Spring Boot implementation</div>
+        <div class="code-block reveal" style="font-size:13px;line-height:1.8;">
+<span class="ca">@PostMapping</span>(<span class="cv">"/payments"</span>)
+<span class="ck">public</span> ResponseEntity&lt;PaymentResponse&gt; charge(
+    <span class="ca">@RequestHeader</span>(<span class="cv">"Idempotency-Key"</span>)
+      String idempotencyKey,
+    <span class="ca">@RequestBody</span> PaymentRequest request) {
+
+  <span class="cc">// Check if we've seen this key</span>
+  Optional&lt;PaymentResponse&gt; existing =
+    idempotencyStore.find(idempotencyKey);
+  <span class="ck">if</span> (existing.isPresent()) {
+    <span class="cc">// return cached result</span>
+    <span class="ck">return</span> ResponseEntity.ok(existing.get());
+  }
+
+  PaymentResponse result =
+    paymentProcessor.charge(request);
+  idempotencyStore.save(idempotencyKey, result);
+  <span class="ck">return</span> ResponseEntity.ok(result);
+}
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+<!-- ===== SLIDE 16 — SECTION DIVIDER: Observability ===== -->
+<section class="slide dark-slide section-divider" id="s16">
+  <div class="section-num reveal">04</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal"><em>Observability</em></h2>
+  <p class="section-sub reveal">Logs · Metrics · Distributed Tracing</p>
+</section>
+
+<!-- ===== SLIDE 17 — THREE PILLARS (dark, 3-col) ===== -->
+<section class="slide dark-slide" id="s17" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Observability</span><span class="chrome-counter">17 / 22</span></div>
+    <div style="padding:24px var(--pad-x) 0;flex-shrink:0;" class="reveal">
+      <h2 class="h2">Knowing what your system is doing <em>without being there</em></h2>
+      <p class="lead" style="font-size:19px;margin-top:8px;">A single user request may touch 8 services across 20 pods. A 500 error could originate anywhere. Without observability, you have no way to find it.</p>
+    </div>
+    <div class="card-row reveal-fade" style="margin-top:16px;">
+      <div class="card-col">
+        <div class="card-num">Pillar 1 — Logs</div>
+        <div class="card-title"><em>What happened</em></div>
+        <div class="card-body">A timestamped record of events. Use structured logging (JSON). Always include <strong>traceId</strong> and <strong>spanId</strong> so logs from different services can be correlated.</div>
+        <div style="margin-top:auto;padding-top:14px;border-top:1px solid var(--border-dark);">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.12em;color:var(--text-hint-dark);">SLF4J → Logback (JSON) → stdout → ELK / Loki / CloudWatch</div>
+        </div>
+      </div>
+      <div class="card-col alt">
+        <div class="card-num">Pillar 2 — Metrics</div>
+        <div class="card-title"><em>How it's performing</em></div>
+        <div class="card-body">Numeric measurements over time: request rate, error rate, latency percentiles, JVM heap, DB pool size. Aggregated and visualised on dashboards.</div>
+        <div style="margin-top:auto;padding-top:14px;border-top:1px solid var(--border-dark);">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.12em;color:var(--text-hint-dark);">Micrometer (Actuator) → Prometheus → Grafana</div>
+        </div>
+      </div>
+      <div class="card-col">
+        <div class="card-num">Pillar 3 — Distributed Traces</div>
+        <div class="card-title"><em>Where the time went</em></div>
+        <div class="card-body">A trace records the full journey of one request across multiple services. A span is one unit of work. Traces answer: "Which service caused the 3-second latency?"</div>
+        <div style="margin-top:auto;padding-top:14px;border-top:1px solid var(--border-dark);">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.12em;color:var(--text-hint-dark);">Micrometer Tracing (Spring Boot 3) → Zipkin / Jaeger</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 18 — STRUCTURED LOGGING (cream, two-col) ===== -->
+<section class="slide cream-slide" id="s18" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Observability</span><span class="chrome-counter">18 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">Structured logging</div>
+        <h2 class="h2 ink reveal" style="font-size:46px;">Logs that machines can <em>read and correlate</em></h2>
+        <ul class="blist ink sm reveal">
+          <li>Plain text logs are for humans in one service</li>
+          <li>JSON logs can be queried and aggregated across all services</li>
+          <li>Always include: <strong>timestamp, level, service, traceId, spanId, message</strong></li>
+          <li>Never log sensitive data (passwords, card numbers, PII)</li>
+        </ul>
+        <div class="reveal" style="margin-top:12px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-light);margin-bottom:6px;">logback-spring.xml</div>
+          <div class="code-block sm" style="font-size:13px;"><span class="cc">&lt;!-- logback-spring.xml --&gt;</span>
+<span class="ck">&lt;encoder</span>
+  <span class="cn">class=</span><span class="cv">"net.logstash.logback
+        .encoder.LogstashEncoder"</span>
+<span class="ck">/&gt;</span></div>
+        </div>
+        <div class="reveal" style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:10px;">
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:18px;color:var(--text-muted-light);line-height:1.5;">The traceId is the magic field. Paste it into your log aggregator and see every log line from every service involved in one user's request.</p>
+        </div>
+      </div>
+      <div class="col-right" style="gap:14px;">
+        <div class="kicker reveal" style="color:var(--gold);">Plain vs. structured</div>
+        <div class="reveal">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#E07070;margin-bottom:6px;">&#x274C; Plain log</div>
+          <div class="code-block sm" style="font-size:13px;border-color:#E07070;">2024-01-15 10:23:41 INFO
+Order 8821 placed for user 42</div>
+        </div>
+        <div class="reveal">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#7EC8A4;margin-bottom:6px;">&#x2705; Structured log (JSON)</div>
+          <div class="code-block sm" style="font-size:13px;border-color:#7EC8A4;line-height:1.75;">{
+  <span class="ck">"timestamp"</span>: <span class="cv">"2024-01-15T10:23:41Z"</span>,
+  <span class="ck">"level"</span>: <span class="cv">"INFO"</span>,
+  <span class="ck">"service"</span>: <span class="cv">"order-service"</span>,
+  <span class="ck">"traceId"</span>: <span class="cv">"4bf92f3577b34da6"</span>,
+  <span class="ck">"spanId"</span>: <span class="cv">"00f067aa0ba902b7"</span>,
+  <span class="ck">"userId"</span>: <span class="cv">42</span>,
+  <span class="ck">"orderId"</span>: <span class="cv">8821</span>,
+  <span class="ck">"message"</span>: <span class="cv">"Order placed successfully"</span>
+}</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 19 — DISTRIBUTED TRACING IN ACTION (dark) ===== -->
+<section class="slide dark-slide" id="s19" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Observability</span><span class="chrome-counter">19 / 22</span></div>
+    <div class="two-col right-wide" style="flex:1;">
+      <div class="col-left" style="gap:16px;">
+        <div class="kicker reveal">Waterfall trace</div>
+        <h2 class="h2 reveal" style="font-size:44px;">Following one request across <em>four services</em></h2>
+        <div class="reveal" style="margin-top:8px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">What this tells you</div>
+          <ul class="blist xs" style="font-size:17px;">
+            <li>Total latency: <strong>320ms</strong></li>
+            <li>Bottleneck: <strong>inventory-db</strong> — DB query taking 105ms</li>
+            <li>payment-service and user-service are healthy</li>
+            <li>Without tracing, you'd have no idea where the 320ms went</li>
+          </ul>
+        </div>
+        <div class="reveal" style="margin-top:12px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Spring Boot 3 setup</div>
+          <div class="code-block sm" style="font-size:12px;line-height:1.7;"><span class="cc">&lt;!-- pom.xml --&gt;</span>
+<span class="ck">&lt;dependency&gt;</span>
+  <span class="cn">&lt;artifactId&gt;</span>micrometer-tracing-bridge-otel<span class="cn">&lt;/artifactId&gt;</span>
+<span class="ck">&lt;/dependency&gt;</span>
+<span class="ck">&lt;dependency&gt;</span>
+  <span class="cn">&lt;artifactId&gt;</span>opentelemetry-exporter-zipkin<span class="cn">&lt;/artifactId&gt;</span>
+<span class="ck">&lt;/dependency&gt;</span>
+
+<span class="cc"># application.yml</span>
+<span class="ck">management.tracing.sampling</span>:
+  <span class="ck">probability</span>: <span class="cv">1.0</span> <span class="cc"># use 0.1 in prod</span></div>
+        </div>
+      </div>
+      <div class="col-right" style="justify-content:center;gap:10px;">
+        <div class="kicker reveal" style="color:var(--gold);">POST /orders — total: 320ms</div>
+        <!-- Waterfall diagram -->
+        <div style="display:flex;flex-direction:column;gap:8px;width:100%;" class="reveal-fade">
+          <!-- order-service bar -->
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:var(--ff-mono);font-size:12px;color:var(--text-muted-dark);width:160px;flex-shrink:0;">order-service</div>
+            <div style="flex:1;height:28px;background:rgba(200,168,112,0.25);border:1px solid var(--gold);position:relative;display:flex;align-items:center;padding:0 8px;">
+              <span style="font-family:var(--ff-mono);font-size:11px;color:var(--gold);">0 → 320ms</span>
+            </div>
+          </div>
+          <!-- user-service bar -->
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:var(--ff-mono);font-size:12px;color:var(--text-muted-dark);width:160px;flex-shrink:0;padding-left:16px;">user-service</div>
+            <div style="flex:1;position:relative;height:24px;">
+              <div style="position:absolute;left:3%;width:16%;height:100%;background:rgba(126,200,164,0.2);border:1px solid #7EC8A4;display:flex;align-items:center;padding:0 6px;">
+                <span style="font-family:var(--ff-mono);font-size:10px;color:#7EC8A4;">50ms</span>
+              </div>
+            </div>
+          </div>
+          <!-- inventory-service bar -->
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:var(--ff-mono);font-size:12px;color:var(--text-muted-dark);width:160px;flex-shrink:0;padding-left:16px;">inventory-service</div>
+            <div style="flex:1;position:relative;height:24px;">
+              <div style="position:absolute;left:20%;width:36%;height:100%;background:rgba(224,112,112,0.15);border:1px solid #E07070;display:flex;align-items:center;padding:0 6px;">
+                <span style="font-family:var(--ff-mono);font-size:10px;color:#E07070;">115ms</span>
+              </div>
+            </div>
+          </div>
+          <!-- inventory-db bar -->
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:var(--ff-mono);font-size:12px;color:var(--text-muted-dark);width:160px;flex-shrink:0;padding-left:32px;">inventory-db</div>
+            <div style="flex:1;position:relative;height:24px;">
+              <div style="position:absolute;left:22%;width:33%;height:100%;background:rgba(224,112,112,0.3);border:1.5px solid #E07070;display:flex;align-items:center;padding:0 6px;">
+                <span style="font-family:var(--ff-mono);font-size:10px;color:#E07070;">105ms &#x26A0; SLOW</span>
+              </div>
+            </div>
+          </div>
+          <!-- payment-service bar -->
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:var(--ff-mono);font-size:12px;color:var(--text-muted-dark);width:160px;flex-shrink:0;padding-left:16px;">payment-service</div>
+            <div style="flex:1;position:relative;height:24px;">
+              <div style="position:absolute;left:58%;width:37%;height:100%;background:rgba(126,200,164,0.2);border:1px solid #7EC8A4;display:flex;align-items:center;padding:0 6px;">
+                <span style="font-family:var(--ff-mono);font-size:10px;color:#7EC8A4;">120ms</span>
+              </div>
+            </div>
+          </div>
+          <!-- timeline axis -->
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+            <div style="width:160px;flex-shrink:0;"></div>
+            <div style="flex:1;height:1px;background:var(--border-dark);position:relative;">
+              <span style="position:absolute;left:0;top:4px;font-family:var(--ff-mono);font-size:10px;color:var(--text-hint-dark);">0ms</span>
+              <span style="position:absolute;left:50%;top:4px;transform:translateX(-50%);font-family:var(--ff-mono);font-size:10px;color:var(--text-hint-dark);">160ms</span>
+              <span style="position:absolute;right:0;top:4px;font-family:var(--ff-mono);font-size:10px;color:var(--text-hint-dark);">320ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+<!-- ===== SLIDE 20 — SECTION DIVIDER: CAP Theorem ===== -->
+<section class="slide dark-slide section-divider" id="s20">
+  <div class="section-num reveal">05</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal">The <em>CAP</em> Theorem</h2>
+  <p class="section-sub reveal">The fundamental tradeoff of distributed systems</p>
+</section>
+
+<!-- ===== SLIDE 21 — CAP THEOREM (cream, triangle + table) ===== -->
+<section class="slide cream-slide" id="s21" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">CAP Theorem</span><span class="chrome-counter">21 / 22</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left" style="gap:16px;">
+        <div class="kicker reveal">Brewer's theorem</div>
+        <h2 class="h2 ink reveal" style="font-size:46px;">You can have <em>two of three</em>. Choose wisely.</h2>
+        <!-- CAP triangle -->
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;" class="reveal">
+          <div style="border:1px solid var(--border-light);background:var(--cream-alt);padding:14px 20px;display:flex;gap:14px;align-items:flex-start;">
+            <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">C</span>
+            <div><div style="font-family:var(--ff-serif);font-size:19px;font-weight:600;color:var(--ink);">Consistency</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Every read returns the most recent write. All nodes see the same data.</div></div>
+          </div>
+          <div style="border:1px solid var(--border-light);background:var(--cream);padding:14px 20px;display:flex;gap:14px;align-items:flex-start;">
+            <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">A</span>
+            <div><div style="font-family:var(--ff-serif);font-size:19px;font-weight:600;color:var(--ink);">Availability</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Every request receives a response. The system is always up.</div></div>
+          </div>
+          <div style="border:1px solid var(--border-light);background:var(--cream-alt);padding:14px 20px;display:flex;gap:14px;align-items:flex-start;">
+            <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">P</span>
+            <div><div style="font-family:var(--ff-serif);font-size:19px;font-weight:600;color:var(--ink);">Partition Tolerance</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">System keeps operating when network messages between nodes are lost. <strong>Not optional</strong> — networks partition.</div></div>
+          </div>
+        </div>
+        <div class="reveal" style="border-top:1px solid var(--border-light);padding-top:12px;margin-top:4px;">
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:18px;color:var(--text-muted-light);line-height:1.5;">The real choice is CP or AP. During a partition: return stale data (choose A), or refuse to respond (choose C)?</p>
+        </div>
+      </div>
+      <div class="col-right" style="gap:16px;">
+        <div class="kicker reveal" style="color:var(--gold);">Examples &amp; microservice impact</div>
+        <table class="sig-table light reveal">
+          <thead><tr><th>CP Systems</th><th>AP Systems</th></tr></thead>
+          <tbody>
+            <tr><td><strong>HBase, ZooKeeper</strong></td><td><strong>Cassandra, DynamoDB</strong></td></tr>
+            <tr><td>Refuse requests during partition</td><td>Return stale data during partition</td></tr>
+            <tr><td>Banking, financial ledgers</td><td>Shopping carts, social feeds, DNS</td></tr>
+          </tbody>
+        </table>
+        <div class="reveal" style="border:1px solid var(--border-light);background:var(--cream-alt);padding:18px 20px;margin-top:8px;">
+          <div style="font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">In your microservices</div>
+          <p style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.55;">When inventory-service is partitioned from order-service:</p>
+          <ul class="blist ink xs" style="margin-top:8px;font-size:15px;">
+            <li><strong>CP choice:</strong> order-service refuses to create orders (safe, unavailable)</li>
+            <li><strong>AP choice:</strong> order-service creates the order using last-known inventory (available, possibly oversells)</li>
+          </ul>
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:16px;color:var(--text-hint-light);margin-top:10px;line-height:1.4;">Both are valid. The business decides which failure mode is acceptable.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 4</span></div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 22 — KEY TAKEAWAYS (dark, closing hero) ===== -->
+<section class="slide dark-slide" id="s22" style="background:var(--navy);">
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);z-index:2;"></div>
+  <div class="slide-inner">
+    <div style="padding:32px var(--pad-x) 0;flex-shrink:0;" class="reveal">
+      <div class="kicker">What to carry forward from Module 4</div>
+      <h2 class="h2" style="margin-top:12px;">Key <em>Takeaways</em></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr 1fr;gap:1px;background:var(--border-dark);flex:1;margin-top:16px;" class="reveal-fade">
+      <div style="background:var(--navy);padding:18px 28px;border-right:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">01</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">The network will fail</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">Every remote call needs a timeout, retry, and circuit breaker. This is not optional.</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:18px 28px;display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">02</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">Cascading failures are the silent killer</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">One slow dependency can take down your entire service mesh. Circuit breakers stop the cascade.</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:18px 28px;border-right:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">03</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">No distributed transactions</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">Design for eventual consistency from day one. The Saga pattern gives you a structured way to manage multi-step operations.</div></div>
+      </div>
+      <div style="background:var(--navy);padding:18px 28px;display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">04</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">Idempotency is mandatory</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">Any endpoint that mutates state must be safe to call more than once. Retries are everywhere.</div></div>
+      </div>
+      <div style="background:var(--navy);padding:18px 28px;border-right:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">05</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">Observability is infrastructure</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">Structured logs, metrics, and distributed traces are the minimum to operate in production.</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:18px 28px;display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">06</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">The traceId is your best debugging tool</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">One ID shows you everything that happened across every service for one user request.</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:18px 28px;border-right:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">07</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">CAP is a business decision</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">Consistency vs. availability during a partition is a product requirement. Involve your team.</div></div>
+      </div>
+      <div style="background:var(--navy);padding:18px 28px;display:flex;gap:16px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:22px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">08</span>
+        <div><div style="font-family:var(--ff-serif);font-size:18px;font-weight:600;color:var(--text-warm);margin-bottom:4px;">Complexity is the cost</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-dark);line-height:1.45;">Everything in this module is complexity a monolith gave you for free. Make sure you're at the scale that justifies it.</div></div>
+      </div>
+    </div>
+    <div class="foot-bar" style="border-top-color:var(--border-dark);">
+      <span class="foot-label">Entry-Level Java Engineering Track</span>
+      <span class="foot-label">Next &#x2192; Module 5: Configuration &amp; Secrets Management</span>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<!-- DECK CONTROLS -->
+<div class="deck-controls">
+  <button class="nav-btn" id="prevBtn">&#x2190; PREV</button>
+  <span class="slide-counter-ui" id="slideCounterUI">1 / 22</span>
+  <button class="nav-btn" id="nextBtn">NEXT &#x2192;</button>
+</div>
+
+<!-- INLINE EDIT -->
+<div class="edit-hotzone" id="editHotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">&#x270F;&#xFE0F;</button>
+
+<script>
+(function() {
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var current = 0;
+  var stage = document.getElementById('deckStage');
+  var counterUI = document.getElementById('slideCounterUI');
+
+  function scaleStage() {
+    var f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    var tx = (window.innerWidth - 1920 * f) / 2;
+    var ty = (window.innerHeight - 1080 * f) / 2;
+    stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + f + ')';
+  }
+  scaleStage();
+  window.addEventListener('resize', scaleStage);
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(idx, total - 1));
+    slides[current].classList.remove('active');
+    current = idx;
+    slides[current].classList.add('active');
+    counterUI.textContent = (current + 1) + ' / ' + total;
+  }
+
+  function next() { showSlide(current + 1); }
+  function prev() { showSlide(current - 1); }
+
+  document.addEventListener('keydown', function(e) {
+    if (editor.isActive && e.target && e.target.getAttribute('contenteditable')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) { editor.toggleEditMode(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); if (editor.isActive) editor.saveToStorage(); }
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+  }, { passive: true });
+
+  var wheelLock = false;
+  document.addEventListener('wheel', function(e) {
+    if (wheelLock) return;
+    wheelLock = true;
+    e.deltaY > 0 ? next() : prev();
+    setTimeout(function() { wheelLock = false; }, 600);
+  }, { passive: true });
+
+  var editor = {
+    isActive: false,
+    editables: [],
+    toggleEditMode: function() {
+      this.isActive = !this.isActive;
+      document.getElementById('editToggle').classList.toggle('active', this.isActive);
+      if (this.isActive) {
+        this.editables = Array.from(document.querySelectorAll(
+          '.slide h1,.slide h2,.slide h3,.slide p,.slide li,.slide td,.slide .card-title,.slide .card-body,.slide .kicker,.slide .section-title,.slide .section-sub'
+        ));
+        this.editables.forEach(function(el) { el.setAttribute('contenteditable', 'true'); });
+      } else {
+        this.editables.forEach(function(el) { el.removeAttribute('contenteditable'); });
+        this.saveToStorage();
+      }
+    },
+    saveToStorage: function() {
+      try { localStorage.setItem('signal-m4-content', document.getElementById('deckStage').innerHTML); } catch(e) {}
+    }
+  };
+
+  var hotzone = document.getElementById('editHotzone');
+  var editToggle = document.getElementById('editToggle');
+  var hideTimeout = null;
+  hotzone.addEventListener('mouseenter', function() { clearTimeout(hideTimeout); editToggle.classList.add('show'); });
+  hotzone.addEventListener('mouseleave', function() { hideTimeout = setTimeout(function() { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+  editToggle.addEventListener('mouseenter', function() { clearTimeout(hideTimeout); });
+  editToggle.addEventListener('mouseleave', function() { hideTimeout = setTimeout(function() { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+  hotzone.addEventListener('click', function() { editor.toggleEditMode(); });
+  editToggle.addEventListener('click', function() { editor.toggleEditMode(); });
+
+  showSlide(0);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+com\example\inventory\health\StockLevelHealthIndicator.class
+com\example\inventory\service\InventoryService.class
+com\example\inventory\service\InventoryService$ProductNotFoundException.class
+com\example\inventory\controller\InventoryController$ReservationRequest.class
+com\example\inventory\InventoryApplication.class
+com\example\inventory\controller\InventoryController.class
+com\example\inventory\repository\ProductRepository.class
+com\example\inventory\model\Product.class

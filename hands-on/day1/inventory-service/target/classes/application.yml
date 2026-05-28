@@ -1,0 +1,77 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# 12-Factor III: Config in environment
+# All values that change between environments are read from env vars.
+# The ${VAR:default} syntax provides a safe fallback for local development.
+# ─────────────────────────────────────────────────────────────────────────────
+
+spring:
+  application:
+    name: inventory-service
+
+  # ── Database (Factor III: swap the URL without touching code) ──────────────
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:inventorydb;DB_CLOSE_DELAY=-1}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop   # recreate schema on startup (dev only)
+    show-sql: false
+    # Spring Boot 2.5+ runs data.sql BEFORE Hibernate DDL by default.
+    # defer-datasource-initialization makes Hibernate create the schema first,
+    # then Spring runs data.sql. Without this you get "Table not found".
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # H2 console — useful for inspecting data during the lab
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # ── Factor IX: Disposability — graceful shutdown ───────────────────────────
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+# ── Factor VII: Port binding — configurable via env var ───────────────────────
+server:
+  port: ${SERVER_PORT:8083}
+  shutdown: graceful          # Factor IX: finish in-flight requests before exit
+
+# ── Actuator: expose health, metrics, info ────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,loggers
+  endpoint:
+    health:
+      show-details: always    # show DB, disk, custom indicators
+      probes:
+        enabled: true         # enables /actuator/health/liveness and /readiness
+  info:
+    env:
+      enabled: true
+
+# ── /actuator/info metadata ───────────────────────────────────────────────────
+info:
+  app:
+    name: inventory-service
+    description: Manages product stock levels for the e-commerce system
+    version: 1.0.0
+  team:
+    name: Platform Engineering
+    module: Day 1 — Microservice Basics
+
+# ── Factor XI: Logs to stdout — no file appenders ────────────────────────────
+logging:
+  level:
+    com.example.inventory: DEBUG
+    org.springframework.web: INFO
+  # Pattern includes service name for log aggregation across services
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [${spring.application.name}] %logger{36} - %msg%n"

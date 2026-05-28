@@ -1,0 +1,5 @@
+.kiro
+.vscode
+
+# Exclude assignment answer keys — not for students
+exercises/**/assignment-answers.md

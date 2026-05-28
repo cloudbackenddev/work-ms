@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 1: Microservice Basics &amp; Cloud-Native Principles</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,300;1,8..60,400;1,8..60,600;1,8..60,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#0d1220;}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:#0d1220;}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:block;visibility:hidden;opacity:0;pointer-events:none;}
+.slide.active{visibility:visible;opacity:1;pointer-events:auto;z-index:1;}
+img,video,canvas,svg{max-width:100%;max-height:100%;}
+@media print{html,body{width:1920px;height:auto;overflow:visible;background:#fff;}.deck-viewport{position:static;overflow:visible;}.deck-stage{position:static;width:auto;height:auto;transform:none!important;}.slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;}.slide:last-child{break-after:auto;}.deck-controls{display:none!important;}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2ms!important;}}
+:root{
+  --navy:#1C2644;--navy-alt:#232F55;--cream:#F0ECE3;--cream-alt:#E6E0D4;
+  --text-warm:#E2DCD0;--text-muted-dark:#8A96A8;--text-hint-dark:#4E5A6E;
+  --ink:#1A2030;--text-muted-light:#5A6270;--text-hint-light:#9AA0A8;
+  --gold:#C8A870;--border-dark:#2E3D5C;--border-light:#CAC4B4;
+  --sz-display:182px;--sz-h1:100px;--sz-h2:58px;--sz-h3:36px;
+  --sz-lead:27px;--sz-body:20px;--sz-caption:16px;--sz-label:13px;
+  --sz-stat:106px;--sz-quote:69px;--sz-editorial:53px;--sz-dense:46px;
+  --pad-x:144px;--pad-y:59px;--gap-lg:43px;--gap-md:27px;--gap-sm:13px;
+  --ff-serif:'Source Serif 4',Georgia,serif;
+  --ff-sans:'DM Sans',system-ui,sans-serif;
+  --ff-mono:'IBM Plex Mono',monospace;
+  --ease-expo:cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+.dark-slide::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:80px 80px;pointer-events:none;z-index:0;}
+.dark-slide>*{position:relative;z-index:1;}
+/* === CREAM SLIDE — Signal warm paper surface === */
+.cream-slide { background: var(--cream) !important; }
+.cream-slide .chrome-bar { background: var(--cream); border-bottom-color: var(--border-light); }
+.cream-slide .foot-bar { background: var(--cream); border-top-color: var(--border-light); }
+.cream-slide .chrome-label { color: var(--gold); }
+.cream-slide .chrome-counter { color: var(--text-hint-light); }
+.cream-slide .foot-label { color: var(--text-hint-light); }
+.cream-slide .slide-inner { background: var(--cream); }
+.cream-slide .slide-body { background: var(--cream); }
+.cream-slide .col-left { background: var(--cream); }
+.cream-slide .col-right { background: var(--cream); border-left-color: var(--border-light); }
+.cream-slide .two-col { background: var(--cream); }
+.cream-slide .h2 { font-size: 52px; }
+.cream-slide .bullet-list li { font-size: 21px; line-height: 1.55; }
+.cream-slide .col-left { gap: 20px; }
+
+.chrome-bar{display:flex;align-items:center;justify-content:space-between;padding:0 var(--pad-x);height:64px;border-bottom:1px solid var(--border-dark);flex-shrink:0;}
+.chrome-bar.light{border-bottom-color:var(--border-light);}
+.chrome-label{font-family:var(--ff-mono);font-size:var(--sz-label);font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);}
+.chrome-counter{font-family:var(--ff-mono);font-size:var(--sz-label);font-weight:400;letter-spacing:0.1em;color:var(--text-hint-dark);}
+.chrome-counter.light{color:var(--text-hint-light);}
+.foot-bar{display:flex;align-items:center;justify-content:space-between;padding:0 var(--pad-x);height:56px;border-top:1px solid var(--border-dark);flex-shrink:0;}
+.foot-bar.light{border-top-color:var(--border-light);}
+.foot-label{font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-dark);}
+.foot-label.light{color:var(--text-hint-light);}
+.slide-inner{display:flex;flex-direction:column;height:100%;}
+.slide-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:var(--pad-y) var(--pad-x);gap:var(--gap-md);}
+.slide-body.top{justify-content:flex-start;padding-top:52px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;overflow:hidden;}
+.two-col.left-wide{grid-template-columns:1.1fr 0.9fr;}
+.col-left{padding:var(--pad-y) var(--pad-x);display:flex;flex-direction:column;justify-content:center;gap:var(--gap-md);}
+.col-right{padding:var(--pad-y) var(--pad-x);display:flex;flex-direction:column;justify-content:center;gap:var(--gap-md);border-left:1px solid var(--border-dark);}
+.col-right.light{border-left-color:var(--border-light);}
+.kicker{font-family:var(--ff-mono);font-size:var(--sz-label);font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:16px;}
+.kicker::before{content:'';display:block;width:36px;height:1px;background:var(--gold);flex-shrink:0;}
+.h1{font-family:var(--ff-serif);font-size:var(--sz-h1);font-weight:600;line-height:1.06;letter-spacing:-0.01em;color:var(--text-warm);}
+.h1.ink{color:var(--ink);}.h1 em{font-style:italic;color:var(--gold);}
+.h2{font-family:var(--ff-serif);font-size:var(--sz-h2);font-weight:600;line-height:1.12;letter-spacing:-0.01em;color:var(--text-warm);}
+.h2.ink{color:var(--ink);}.h2 em{font-style:italic;color:var(--gold);}
+.h3{font-family:var(--ff-serif);font-size:var(--sz-h3);font-weight:500;line-height:1.3;color:var(--text-warm);}
+.h3.ink{color:var(--ink);}.h3 em{font-style:italic;color:var(--gold);}
+.lead{font-family:var(--ff-sans);font-size:var(--sz-lead);font-weight:400;line-height:1.58;color:var(--text-muted-dark);}
+.lead.ink{color:var(--text-muted-light);}.lead em{font-family:var(--ff-serif);font-style:italic;color:var(--gold);}
+.body-text{font-family:var(--ff-sans);font-size:var(--sz-body);font-weight:400;line-height:1.65;color:var(--text-muted-dark);}
+.body-text.ink{color:var(--text-muted-light);}
+.caption{font-family:var(--ff-sans);font-size:var(--sz-caption);color:var(--text-hint-dark);line-height:1.5;}
+.caption.ink{color:var(--text-hint-light);}
+.gold-rule{width:36px;height:1px;background:var(--gold);flex-shrink:0;}
+.bullet-list{list-style:none;display:flex;flex-direction:column;gap:var(--gap-sm);}
+.bullet-list li{display:flex;align-items:baseline;gap:14px;font-family:var(--ff-sans);font-size:22px;line-height:1.55;color:var(--text-muted-dark);}
+.bullet-list.ink li{color:var(--text-muted-light);}
+.bullet-list li::before{content:'—';font-family:var(--ff-mono);color:var(--gold);font-size:var(--sz-label);flex-shrink:0;line-height:1.55;}
+.bullet-list li strong{font-weight:500;color:var(--text-warm);display:inline;}
+.bullet-list.ink li strong{color:var(--ink);display:inline;}
+.stat-card{border-top:1px solid var(--border-dark);padding:var(--gap-md) 0;display:flex;flex-direction:column;gap:6px;}
+.stat-card.light{border-top-color:var(--border-light);}
+.stat-value{font-family:var(--ff-serif);font-size:var(--sz-stat);font-weight:600;line-height:1;letter-spacing:-0.02em;color:var(--gold);}
+.stat-label{font-family:var(--ff-sans);font-size:var(--sz-lead);color:var(--text-muted-dark);}
+.stat-label.ink{color:var(--text-muted-light);}
+.stat-note{font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.1em;color:var(--text-hint-dark);}
+.stat-note.ink{color:var(--text-hint-light);}
+.tag{display:inline-block;border:1px solid var(--gold);color:var(--gold);font-family:var(--ff-mono);font-size:var(--sz-label);font-weight:500;letter-spacing:0.14em;text-transform:uppercase;padding:6px 16px;}
+.card-grid-2x2{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border-dark);flex:1;overflow:hidden;}
+.card-grid-2x2.light{background:var(--border-light);}
+.card{background:var(--navy);padding:44px 52px;display:flex;flex-direction:column;gap:var(--gap-sm);}
+.card.cream{background:var(--cream);}
+.card.navy-alt{background:var(--navy-alt);}
+.card.warning{background:#2A1A1A;}
+.card-title{font-family:var(--ff-serif);font-size:var(--sz-h3);font-weight:600;color:var(--text-warm);line-height:1.2;}
+.card-title.ink{color:var(--ink);}.card-title em{font-style:italic;color:var(--gold);}
+.card-body{font-family:var(--ff-sans);font-size:var(--sz-body);line-height:1.6;color:var(--text-muted-dark);}
+.card-body.ink{color:var(--text-muted-light);}
+.signal-table{width:100%;border-collapse:collapse;font-family:var(--ff-sans);font-size:var(--sz-body);}
+.signal-table th{font-family:var(--ff-mono);font-size:var(--sz-label);font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);text-align:left;padding:14px 20px;border-bottom:1px solid var(--border-dark);}
+.signal-table.light th{border-bottom-color:var(--border-light);}
+.signal-table td{padding:14px 20px;border-bottom:1px solid var(--border-dark);color:var(--text-muted-dark);vertical-align:top;line-height:1.5;}
+.signal-table.light td{border-bottom-color:var(--border-light);color:var(--text-muted-light);}
+.signal-table td:first-child{font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.1em;color:var(--gold);white-space:nowrap;}
+.signal-table tr:last-child td{border-bottom:none;}
+.signal-table td strong{color:var(--text-warm);font-weight:500;}
+.signal-table.light td strong{color:var(--ink);}
+.code-block::-webkit-scrollbar{height:4px;background:transparent;}.code-block::-webkit-scrollbar-thumb{background:var(--border-dark);border-radius:2px;}.code-block{background:#0D1520;border:1px solid var(--border-dark);padding:20px 24px;font-family:var(--ff-mono);font-size:14px;line-height:1.8;color:#B8C4D4;overflow-x:auto;white-space:pre;word-break:normal;}
+.code-block .cc{color:var(--text-hint-dark);}
+.code-block .ck{color:var(--gold);}
+.code-block .cv{color:#7EC8A4;}
+.code-block .cn{color:#9ECBFF;}
+.section-divider{background:var(--navy);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 var(--pad-x);gap:var(--gap-md);}
+.section-num{font-family:var(--ff-mono);font-size:120px;font-weight:500;letter-spacing:-0.02em;color:rgba(200,168,112,0.18);line-height:1;}
+.section-title{font-family:var(--ff-serif);font-size:var(--sz-h1);font-weight:600;line-height:1.06;letter-spacing:-0.01em;color:var(--text-warm);}
+.section-title em{font-style:italic;color:var(--gold);}
+.section-sub{font-family:var(--ff-sans);font-size:var(--sz-lead);color:var(--text-muted-dark);max-width:800px;}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.65s var(--ease-expo),transform 0.65s var(--ease-expo);}
+.slide.active .reveal{opacity:1;transform:translateY(0);}
+.slide.active .reveal:nth-child(1){transition-delay:0.08s;}
+.slide.active .reveal:nth-child(2){transition-delay:0.18s;}
+.slide.active .reveal:nth-child(3){transition-delay:0.28s;}
+.slide.active .reveal:nth-child(4){transition-delay:0.38s;}
+.slide.active .reveal:nth-child(5){transition-delay:0.48s;}
+.slide.active .reveal:nth-child(6){transition-delay:0.56s;}
+.slide.active .reveal:nth-child(7){transition-delay:0.64s;}
+.slide.active .reveal:nth-child(8){transition-delay:0.72s;}
+.reveal-fade{opacity:0;transition:opacity 0.8s var(--ease-expo);}
+.slide.active .reveal-fade{opacity:1;}
+.slide.active .reveal-fade:nth-child(1){transition-delay:0.1s;}
+.slide.active .reveal-fade:nth-child(2){transition-delay:0.25s;}
+.slide.active .reveal-fade:nth-child(3){transition-delay:0.4s;}
+.slide.active .reveal-fade:nth-child(4){transition-delay:0.55s;}
+.deck-controls{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;align-items:center;gap:12px;}
+.nav-btn{background:rgba(28,38,68,0.85);border:1px solid var(--border-dark);color:var(--text-muted-dark);font-family:var(--ff-mono);font-size:13px;letter-spacing:0.1em;padding:8px 20px;cursor:pointer;transition:color 0.2s,border-color 0.2s;backdrop-filter:blur(8px);}
+.nav-btn:hover{color:var(--gold);border-color:var(--gold);}
+.slide-counter-ui{font-family:var(--ff-mono);font-size:12px;letter-spacing:0.14em;color:var(--text-hint-dark);min-width:60px;text-align:center;}
+.edit-hotzone{position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;}
+.edit-toggle{position:fixed;top:16px;left:16px;z-index:10001;background:rgba(28,38,68,0.9);border:1px solid var(--border-dark);color:var(--text-muted-dark);font-size:16px;width:40px;height:40px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.3s ease;backdrop-filter:blur(8px);}
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto;}
+.edit-toggle.active{color:var(--gold);border-color:var(--gold);}
+[contenteditable="true"]{outline:1px dashed rgba(200,168,112,0.4);}
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+<!-- SLIDE 1 — TITLE (dark) -->
+<section class="slide dark-slide active" id="slide-1" style="background:var(--navy);">
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);z-index:2;"></div>
+  <div style="display:flex;height:100%;">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 var(--pad-x);gap:var(--gap-md);">
+      <div class="kicker reveal">Module 01 · Java Engineering Track</div>
+      <h1 class="h1 reveal" style="font-size:96px;line-height:0.98;">Microservice Basics<br>&amp; <em>Cloud-Native</em><br>Principles</h1>
+      <div class="gold-rule reveal"></div>
+      <p class="lead reveal">12-Factor App · Service Design · Spring Boot Foundations</p>
+      <div style="display:flex;gap:48px;margin-top:var(--gap-sm);" class="reveal">
+        <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--text-hint-dark);">Duration</span><span style="font-family:var(--ff-sans);font-size:20px;color:var(--text-warm);">45 minutes</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--text-hint-dark);">Slides</span><span style="font-family:var(--ff-sans);font-size:20px;color:var(--text-warm);">18 slides</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--text-hint-dark);">Audience</span><span style="font-family:var(--ff-sans);font-size:20px;color:var(--text-warm);">Entry-level Java engineers</span></div>
+      </div>
+    </div>
+    <div style="width:520px;border-left:1px solid var(--border-dark);display:flex;flex-direction:column;justify-content:center;padding:0 56px;gap:var(--gap-md);" class="reveal-fade">
+      <div style="font-family:var(--ff-serif);font-size:160px;font-weight:600;color:rgba(200,168,112,0.1);line-height:1;letter-spacing:-0.04em;">01</div>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:-20px;">
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Monolith to Microservice</div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Bounded Contexts &amp; DDD</div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>The 12-Factor App</div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Cloud-Native Characteristics</div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Spring Boot Runtime</div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>Spring Boot Actuator</div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>E-Commerce Running Example</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--border-dark);"></div>
+</section>
+
+<!-- SLIDE 2 — AGENDA (cream) -->
+<section class="slide cream-slide" id="slide-2" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">Agenda</span><span class="chrome-counter light">02 / 21</span></div>
+    <div class="slide-body top" style="padding-top:44px;">
+      <div class="kicker reveal">What we'll cover today</div>
+      <h2 class="h2 ink reveal">Seven topics, <em>one system</em></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border-light);background:var(--border-light);" class="reveal">
+        <div style="padding:22px 28px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;background:var(--cream);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">01</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">From monolith to microservice</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">The why behind the shift</div></div></div>
+        <div style="padding:22px 28px;border-bottom:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;background:var(--cream-alt);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">02</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">Bounded contexts &amp; service boundaries</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">How do you know where to cut?</div></div></div>
+        <div style="padding:22px 28px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">03</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">The 12-Factor App methodology</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">A contract for cloud-ready services</div></div></div>
+        <div style="padding:22px 28px;border-bottom:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">04</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">Cloud-native characteristics</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">Beyond 12-factor</div></div></div>
+        <div style="padding:22px 28px;border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;background:var(--cream);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">05</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">Spring Boot as a microservice runtime</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">Why it fits the cloud-native model</div></div></div>
+        <div style="padding:22px 28px;border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;background:var(--cream-alt);"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">06</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">The running example: e-commerce</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">Your reference system for all 6 modules</div></div></div>
+        <div style="padding:22px 28px;display:flex;gap:18px;align-items:flex-start;background:var(--cream);border-top:1px solid var(--border-light);grid-column:1/-1;"><span style="font-family:var(--ff-mono);font-size:20px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.3;">07</span><div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);">Spring Boot Actuator</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);margin-top:3px;">Health, metrics, and graceful shutdown — out of the box</div></div></div>
+      </div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 3 — SECTION DIVIDER: The Monolith Problem -->
+<section class="slide dark-slide section-divider" id="slide-3">
+  <div class="section-num reveal">01</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal">The <em>Monolith</em> Problem</h2>
+  <p class="section-sub reveal">Why teams started breaking things apart</p>
+</section>
+
+<!-- SLIDE 4 — What is a Monolith? (cream) -->
+<section class="slide cream-slide" id="slide-4" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">The Monolith Problem</span><span class="chrome-counter light">04 / 21</span></div>
+    <div class="two-col left-wide" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">One deployable unit</div>
+        <h2 class="h2 ink reveal">The monolith: <em>everything</em> ships together</h2>
+        <ul class="bullet-list ink reveal">
+          <li>Single codebase, single deployment artifact (WAR/JAR)</li>
+          <li>All modules share <strong>one database</strong></li>
+          <li>Works well for small teams and early-stage products</li>
+          <li>Scaling means scaling <strong>everything</strong>, even unused parts</li>
+        </ul>
+      </div>
+      <div class="col-right light" style="align-items:center;justify-content:center;gap:0;background:var(--cream-alt);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;width:340px;" class="reveal-fade">
+          <div style="border:1.5px solid var(--border-light);background:var(--cream-alt);padding:28px 32px;width:100%;display:flex;flex-direction:column;gap:12px;">
+            <div style="font-family:var(--ff-mono);font-size:13px;letter-spacing:0.12em;color:var(--gold);text-align:center;margin-bottom:8px;">Monolith (WAR)</div>
+            <div style="border:1px solid var(--border-light);padding:12px 16px;font-family:var(--ff-mono);font-size:14px;color:var(--text-muted-light);text-align:center;background:var(--cream);">UserService</div>
+            <div style="border:1px solid var(--border-light);padding:12px 16px;font-family:var(--ff-mono);font-size:14px;color:var(--text-muted-light);text-align:center;background:var(--cream);">OrderService</div>
+            <div style="border:1px solid var(--border-light);padding:12px 16px;font-family:var(--ff-mono);font-size:14px;color:var(--text-muted-light);text-align:center;background:var(--cream);">PaymentService</div>
+          </div>
+          <div style="width:1px;height:32px;background:var(--border-light);"></div>
+          <div style="border:1.5px solid var(--gold);padding:14px 40px;font-family:var(--ff-mono);font-size:14px;color:var(--gold);letter-spacing:0.1em;background:rgba(200,168,112,0.06);">&#x2B21; Shared DB</div>
+        </div>
+        <p class="caption ink reveal" style="margin-top:24px;text-align:center;max-width:300px;">All three services share one database — a single point of coupling</p>
+      </div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 5 — Why Microservices? (dark, 2x2 cards) -->
+<section class="slide dark-slide" id="slide-5" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">The Monolith Problem</span><span class="chrome-counter">05 / 21</span></div>
+    <div style="padding:32px var(--pad-x) 0;flex-shrink:0;" class="reveal"><h2 class="h2">What microservices <em>solve</em> — and what they don't</h2></div>
+    <div class="card-grid-2x2 reveal-fade" style="margin:20px 0 0 0;flex:1;">
+      <div class="card"><div class="card-title"><em>Independent</em> deployment</div><div class="card-body">Each service ships on its own schedule — no coordinating a big-bang release across the whole system.</div></div>
+      <div class="card navy-alt"><div class="card-title"><em>Independent</em> scaling</div><div class="card-body">Scale only the services under load, not the entire application. Pay for what you actually use.</div></div>
+      <div class="card navy-alt"><div class="card-title">Team <em>autonomy</em></div><div class="card-body">Small teams own their service end-to-end — tech choices, database, release cadence. No waiting on others.</div></div>
+      <div class="card warning"><div class="card-title" style="color:#E07070;">Real cost: <em style="color:#E07070;">complexity</em></div><div class="card-body" style="color:#A08080;">Networking, failures, and distributed state replace simple method calls. This is not free.</div><div style="margin-top:auto;padding-top:12px;"><span class="tag" style="border-color:#E07070;color:#E07070;">&#9888; Know the tradeoff</span></div></div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 6 — SECTION DIVIDER: Service Boundaries -->
+<section class="slide dark-slide section-divider" id="slide-6">
+  <div class="section-num reveal">02</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal">Service <em>Boundaries</em></h2>
+  <p class="section-sub reveal">How do you know where to cut?</p>
+</section>
+
+<!-- SLIDE 7 — Bounded Contexts (cream) -->
+<section class="slide cream-slide" id="slide-7" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">Service Boundaries</span><span class="chrome-counter light">07 / 21</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">Domain-Driven Design</div>
+        <h2 class="h2 ink reveal">Bounded contexts: <em>the unit</em> of a microservice</h2>
+        <ul class="bullet-list ink reveal">
+          <li>Term from <strong>Domain-Driven Design (DDD)</strong></li>
+          <li>A logical boundary around a domain concept with its own language, data model, and rules</li>
+          <li>Services map <strong>1:1 to bounded contexts</strong> in most cases</li>
+          <li>The boundary says: this service does not need to know what happens over there</li>
+        </ul>
+        <div class="reveal" style="margin-top:var(--gap-sm);border-top:1px solid var(--border-light);padding-top:var(--gap-sm);">
+          <span style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-light);">Heuristic</span>
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:22px;color:var(--text-muted-light);margin-top:8px;line-height:1.4;">A service should be ownable by a team of 2–8 people.</p>
+        </div>
+      </div>
+      <div class="col-right light" style="gap:18px;background:var(--cream-alt);">
+        <div class="kicker reveal">E-Commerce breakdown</div>
+        <div style="display:flex;flex-direction:column;gap:14px;" class="reveal">
+          <div style="border:1px solid var(--border-light);padding:18px 22px;display:flex;gap:14px;align-items:flex-start;background:var(--cream-alt);"><span style="font-size:22px;flex-shrink:0;">&#x1F9D1;</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">user-service</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Registration, authentication, profiles</div></div></div>
+          <div style="border:1px solid var(--border-light);padding:18px 22px;display:flex;gap:14px;align-items:flex-start;background:var(--cream-alt);"><span style="font-size:22px;flex-shrink:0;">&#x1F4E6;</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">order-service</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Cart, checkout, order lifecycle</div></div></div>
+          <div style="border:1px solid var(--border-light);padding:18px 22px;display:flex;gap:14px;align-items:flex-start;background:var(--cream-alt);"><span style="font-size:22px;flex-shrink:0;">&#x1F3ED;</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">inventory-service</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Stock levels, warehouse</div></div></div>
+          <div style="border:1px solid var(--border-light);padding:18px 22px;display:flex;gap:14px;align-items:flex-start;background:var(--cream-alt);"><span style="font-size:22px;flex-shrink:0;">&#x1F4B3;</span><div><div style="font-family:var(--ff-serif);font-size:20px;font-weight:600;color:var(--ink);">payment-service</div><div style="font-family:var(--ff-sans);font-size:15px;color:var(--text-muted-light);margin-top:3px;">Charge, refund, billing history</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 8 — SECTION DIVIDER: The 12-Factor App -->
+<section class="slide dark-slide section-divider" id="slide-8">
+  <div class="section-num reveal">03</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal">The <em>12-Factor</em> App</h2>
+  <p class="section-sub reveal">A methodology for building robust, portable services</p>
+</section>
+
+<!-- SLIDE 9 — What is the 12-Factor App? (cream) -->
+<section class="slide cream-slide" id="slide-9" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">The 12-Factor App</span><span class="chrome-counter light">09 / 21</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">A contract for cloud-ready services</div>
+        <h2 class="h2 ink reveal">Authored at <em>Heroku</em>, 2011</h2>
+        <ul class="bullet-list ink reveal">
+          <li>Written by Adam Wiggins — 12 principles for software-as-a-service</li>
+          <li>Language- and platform-agnostic, maps naturally to <strong>Spring Boot</strong></li>
+          <li>Designed to: maximize portability, enable cloud deployment, support continuous delivery</li>
+          <li>A service can follow 8 of 12 and still be far more cloud-ready than a typical monolith</li>
+        </ul>
+        <div class="reveal" style="margin-top:var(--gap-sm);">
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:20px;color:var(--text-muted-light);border-left:2px solid var(--gold);padding-left:20px;line-height:1.5;">Know the rule before you break it. Teams violate factors intentionally — with good reason.</p>
+        </div>
+      </div>
+      <div class="col-right light" style="align-items:center;justify-content:center;background:var(--cream-alt);">
+        <div style="text-align:center;" class="reveal-fade">
+          <div style="font-family:var(--ff-serif);font-size:200px;font-weight:600;color:var(--gold);line-height:1;letter-spacing:-0.04em;">12</div>
+          <div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.2em;text-transform:uppercase;color:var(--text-hint-light);margin-top:8px;">Independently applicable factors</div>
+          <div style="width:60px;height:1px;background:var(--gold);margin:20px auto;"></div>
+          <div style="font-family:var(--ff-sans);font-size:18px;color:var(--text-muted-light);max-width:280px;margin:0 auto;line-height:1.5;">Each one is a guideline, not a law</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+<!-- SLIDE 10 — 12 Factors Part 1 (dark) -->
+<section class="slide dark-slide" id="slide-10" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">The 12-Factor App</span><span class="chrome-counter">10 / 21</span></div>
+    <div style="padding:28px var(--pad-x) 0;flex-shrink:0;" class="reveal"><h2 class="h2">Factors 1–6: <em>Codebase to processes</em></h2></div>
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--border-dark);margin:20px 0 0 0;" class="reveal-fade">
+      <div style="background:var(--navy);padding:28px 36px;border-bottom:1px solid var(--border-dark);border-right:1px solid var(--border-dark);display:flex;gap:20px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:28px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">I</span>
+        <div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--text-warm);margin-bottom:6px;">Codebase</div><div style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">One repo, many deploys — no separate codebases per environment</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:28px 36px;border-bottom:1px solid var(--border-dark);display:flex;gap:20px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:28px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">II</span>
+        <div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--text-warm);margin-bottom:6px;">Dependencies</div><div style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">Explicitly declare all dependencies (Maven/Gradle pom.xml) — never rely on system-installed libraries</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:28px 36px;border-bottom:1px solid var(--border-dark);border-right:1px solid var(--border-dark);display:flex;gap:20px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:28px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">III</span>
+        <div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--text-warm);margin-bottom:6px;">Config <span style="font-family:var(--ff-mono);font-size:13px;color:#E07070;letter-spacing:0.1em;vertical-align:middle;margin-left:8px;">OFTEN VIOLATED</span></div><div style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">Store config in environment variables, not code — URLs, credentials, feature flags</div></div>
+      </div>
+      <div style="background:var(--navy);padding:28px 36px;border-bottom:1px solid var(--border-dark);display:flex;gap:20px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:28px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">IV</span>
+        <div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--text-warm);margin-bottom:6px;">Backing Services</div><div style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">Treat databases, queues, and caches as attached resources — swappable without code changes</div></div>
+      </div>
+      <div style="background:var(--navy);padding:28px 36px;border-right:1px solid var(--border-dark);display:flex;gap:20px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:28px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">V</span>
+        <div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--text-warm);margin-bottom:6px;">Build / Release / Run</div><div style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">Strictly separate build, release, and runtime stages — never patch code in production</div></div>
+      </div>
+      <div style="background:var(--navy-alt);padding:28px 36px;display:flex;gap:20px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:28px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">VI</span>
+        <div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--text-warm);margin-bottom:6px;">Processes <span style="font-family:var(--ff-mono);font-size:13px;color:#E07070;letter-spacing:0.1em;vertical-align:middle;margin-left:8px;">OFTEN VIOLATED</span></div><div style="font-family:var(--ff-sans);font-size:17px;color:var(--text-muted-dark);line-height:1.5;">Services are stateless — any state lives in a backing service (DB, Redis), not in memory</div></div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 11 — 12 Factors Part 2 (cream) -->
+<section class="slide cream-slide" id="slide-11" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">The 12-Factor App</span><span class="chrome-counter light">11 / 21</span></div>
+    <div style="padding:28px var(--pad-x) 0;flex-shrink:0;" class="reveal"><h2 class="h2 ink">Factors 7–12: <em>Port binding to logs</em></h2></div>
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--border-light);margin:20px 0 0 0;" class="reveal-fade">
+      <div style="background:var(--cream);padding:26px 32px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:26px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">VII</span>
+        <div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:5px;">Port Binding</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Services expose themselves via a port — Spring Boot's embedded Tomcat is the canonical example</div></div>
+      </div>
+      <div style="background:var(--cream-alt);padding:26px 32px;border-bottom:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:26px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">VIII</span>
+        <div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:5px;">Concurrency</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Scale out by running more instances (horizontal), not bigger instances (vertical)</div></div>
+      </div>
+      <div style="background:var(--cream-alt);padding:26px 32px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:26px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">IX</span>
+        <div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:5px;">Disposability <span style="font-family:var(--ff-mono);font-size:12px;color:#B05050;letter-spacing:0.1em;vertical-align:middle;margin-left:6px;">CRITICAL IN K8S</span></div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Fast startup, graceful shutdown — services must handle being killed and restarted at any time</div></div>
+      </div>
+      <div style="background:var(--cream);padding:26px 32px;border-bottom:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:26px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">X</span>
+        <div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:5px;">Dev/Prod Parity</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Keep development, staging, and production as similar as possible</div></div>
+      </div>
+      <div style="background:var(--cream);padding:26px 32px;border-right:1px solid var(--border-light);display:flex;gap:18px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:26px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">XI</span>
+        <div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:5px;">Logs <span style="font-family:var(--ff-mono);font-size:12px;color:#B05050;letter-spacing:0.1em;vertical-align:middle;margin-left:6px;">SURPRISES STUDENTS</span></div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Treat logs as event streams — write to stdout, let the platform aggregate (no log files)</div></div>
+      </div>
+      <div style="background:var(--cream-alt);padding:26px 32px;display:flex;gap:18px;align-items:flex-start;">
+        <span style="font-family:var(--ff-mono);font-size:26px;color:var(--gold);font-weight:500;flex-shrink:0;line-height:1.1;">XII</span>
+        <div><div style="font-family:var(--ff-serif);font-size:21px;font-weight:600;color:var(--ink);margin-bottom:5px;">Admin Processes</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Run one-off tasks (DB migrations, scripts) as separate processes, not baked into the service</div></div>
+      </div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 12 — 12 Factors in Spring Boot (dark, table) -->
+<section class="slide dark-slide" id="slide-12" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">The 12-Factor App</span><span class="chrome-counter">12 / 21</span></div>
+    <div class="slide-body top" style="padding-top:36px;">
+      <div class="kicker reveal">Practical mapping</div>
+      <h2 class="h2 reveal">12 factors &#x2192; <em>Spring Boot</em> features</h2>
+      <table class="signal-table reveal" style="margin-top:8px;">
+        <thead><tr><th>Factor</th><th>Spring Boot Implementation</th></tr></thead>
+        <tbody>
+          <tr><td>II — Dependencies</td><td><strong>pom.xml</strong> + Spring Boot starters</td></tr>
+          <tr><td>III — Config</td><td><strong>application.yml</strong> + @Value + Spring Cloud Config</td></tr>
+          <tr><td>IV — Backing services</td><td>Spring Data (DB), Spring AMQP (queues) — swap datasource URL, not code</td></tr>
+          <tr><td>VI — Stateless processes</td><td><strong>@RestController</strong> — no HttpSession; externalize state to Redis or DB</td></tr>
+          <tr><td>VII — Port binding</td><td>Embedded Tomcat — <strong>server.port</strong> in properties</td></tr>
+          <tr><td>IX — Disposability</td><td><strong>spring.lifecycle.timeout-per-shutdown-phase</strong> + graceful shutdown config</td></tr>
+          <tr><td>XI — Logs</td><td>SLF4J &#x2192; stdout by default; no file appenders in cloud environments</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 13 — SECTION DIVIDER: Cloud-Native -->
+<section class="slide dark-slide section-divider" id="slide-13">
+  <div class="section-num reveal">04</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal"><em>Cloud-Native</em> Microservices</h2>
+  <p class="section-sub reveal">Beyond 12-factor: what makes a service truly cloud-ready</p>
+</section>
+
+<!-- SLIDE 14 — Cloud-Native Characteristics (cream, 2x3 grid) -->
+<section class="slide cream-slide" id="slide-14" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">Cloud-Native Microservices</span><span class="chrome-counter light">14 / 21</span></div>
+    <div style="padding:28px var(--pad-x) 0;flex-shrink:0;" class="reveal"><h2 class="h2 ink">Six hallmarks of a <em>cloud-native</em> service</h2></div>
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:0;background:var(--border-light);margin:20px 0 0 0;" class="reveal-fade">
+      <div style="background:var(--cream);padding:28px 32px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);"><div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">01</div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;">Containerized</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Packaged as a Docker image — same artifact runs in dev, staging, and prod</div></div>
+      <div style="background:var(--cream-alt);padding:28px 32px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);"><div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">02</div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;">Dynamically orchestrated</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Kubernetes schedules, scales, and heals it — the service doesn't know which host it's on</div></div>
+      <div style="background:var(--cream);padding:28px 32px;border-bottom:1px solid var(--border-light);"><div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">03</div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;">Health-aware</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Exposes /actuator/health — the platform uses it to route traffic and restart failed instances</div></div>
+      <div style="background:var(--cream-alt);padding:28px 32px;border-right:1px solid var(--border-light);"><div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">04</div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;">Observable</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Structured logs, metrics (Micrometer), and traces — not just "it worked or it didn't"</div></div>
+      <div style="background:var(--cream);padding:28px 32px;border-right:1px solid var(--border-light);"><div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">05</div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;">Resilient by design</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">Assumes dependencies fail — uses timeouts, retries, and circuit breakers</div></div>
+      <div style="background:var(--cream-alt);padding:28px 32px;"><div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">06</div><div style="font-family:var(--ff-serif);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:8px;">Independently deployable</div><div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-light);line-height:1.5;">No coordinated release trains — deploys whenever its tests pass</div></div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+<!-- SLIDE 15 — Spring Boot as Microservice Runtime (dark, two-col with code) -->
+<section class="slide dark-slide" id="slide-15" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Cloud-Native Microservices</span><span class="chrome-counter">15 / 21</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">Why Spring Boot fits</div>
+        <h2 class="h2 reveal">Built for the <em>cloud-native</em> model</h2>
+        <ul class="bullet-list reveal" style="font-size:19px;">
+          <li>Embedded server (Tomcat/Netty) — no external app server required <strong>(Factor VII)</strong></li>
+          <li>Spring Boot Actuator — /health, /metrics, /info out of the box</li>
+          <li>Spring Profiles — environment-specific config without code changes <strong>(Factor X)</strong></li>
+          <li>Graceful shutdown built-in — safe Kubernetes termination <strong>(Factor IX)</strong></li>
+          <li>Micrometer included — metrics to Prometheus, Datadog, or CloudWatch</li>
+          <li>Docker-friendly — mvn spring-boot:build-image builds an OCI image</li>
+        </ul>
+      </div>
+      <div class="col-right" style="justify-content:center;gap:var(--gap-md);">
+        <div class="kicker reveal">application.yml</div>
+        <div class="code-block reveal" style="font-size:16px;line-height:1.75;">
+<span class="cc"># Factor III: config in environment</span>
+<span class="ck">spring</span>:
+  <span class="ck">datasource</span>:
+    <span class="ck">url</span>: <span class="cn">${DB_URL}</span>         <span class="cc"># injected at runtime</span>
+    <span class="ck">username</span>: <span class="cn">${DB_USER}</span>
+    <span class="ck">password</span>: <span class="cn">${DB_PASSWORD}</span>
+<span class="ck">server</span>:
+  <span class="ck">port</span>: <span class="cv">8080</span>
+  <span class="ck">shutdown</span>: <span class="cv">graceful</span>    <span class="cc"># Factor IX</span>
+<span class="ck">management</span>:
+  <span class="ck">endpoints</span>:
+    <span class="ck">web</span>:
+      <span class="ck">exposure</span>:
+        <span class="ck">include</span>: <span class="cv">health,info,metrics</span>
+        </div>
+        <p class="caption reveal" style="color:var(--text-hint-dark);">Live demo: start a bare Spring Boot app, hit /actuator/health — students are always surprised how much comes for free.</p>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 16 — SECTION DIVIDER: Spring Boot Actuator -->
+<section class="slide dark-slide section-divider" id="slide-16-act">
+  <div class="section-num reveal">05</div>
+  <div class="gold-rule reveal"></div>
+  <h2 class="section-title reveal">Spring Boot <em>Actuator</em></h2>
+  <p class="section-sub reveal">Production-ready endpoints — zero configuration required</p>
+</section>
+
+<!-- SLIDE 17 — Actuator Endpoints (cream, two-col) -->
+<section class="slide cream-slide" id="slide-17-act" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Spring Boot Actuator</span><span class="chrome-counter">17 / 21</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left">
+        <div class="kicker reveal">What you get for free</div>
+        <h2 class="h2 ink reveal">Add one dependency. Get <em>production visibility</em>.</h2>
+        <div class="reveal" style="margin-top:4px;">
+          <div style="font-family:var(--ff-mono);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-light);margin-bottom:8px;">pom.xml</div>
+          <div class="code-block" style="font-size:13px;"><span class="cc">&lt;dependency&gt;</span>
+  <span class="ck">&lt;groupId&gt;</span>org.springframework.boot<span class="ck">&lt;/groupId&gt;</span>
+  <span class="ck">&lt;artifactId&gt;</span>spring-boot-starter-actuator<span class="ck">&lt;/artifactId&gt;</span>
+<span class="cc">&lt;/dependency&gt;</span></div>
+        </div>
+        <div class="reveal" style="margin-top:14px;">
+          <div style="font-family:var(--ff-mono);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-hint-light);margin-bottom:8px;">application.yml — expose endpoints</div>
+          <div class="code-block" style="font-size:13px;"><span class="ck">management</span>:
+  <span class="ck">endpoints</span>:
+    <span class="ck">web</span>:
+      <span class="ck">exposure</span>:
+        <span class="ck">include</span>: <span class="cv">health,info,metrics,env</span>
+  <span class="ck">endpoint</span>:
+    <span class="ck">health</span>:
+      <span class="ck">show-details</span>: <span class="cv">always</span></div>
+        </div>
+      </div>
+      <div class="col-right" style="gap:0;padding:0;">
+        <div style="padding:24px 36px 16px;background:var(--navy-alt);border-bottom:1px solid var(--border-dark);">
+          <div class="kicker reveal" style="color:var(--gold);">Key endpoints</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0;flex:1;" class="reveal-fade">
+          <div style="padding:16px 36px;border-bottom:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;background:var(--navy);">
+            <div style="font-family:var(--ff-mono);font-size:13px;color:var(--gold);flex-shrink:0;min-width:200px;">/actuator/health</div>
+            <div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);line-height:1.4;">Service status + component health (DB, disk, custom). Used by Kubernetes liveness &amp; readiness probes.</div>
+          </div>
+          <div style="padding:16px 36px;border-bottom:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;background:var(--navy-alt);">
+            <div style="font-family:var(--ff-mono);font-size:13px;color:var(--gold);flex-shrink:0;min-width:200px;">/actuator/metrics</div>
+            <div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);line-height:1.4;">JVM heap, GC, HTTP request counts, latency percentiles. Scraped by Prometheus in Module 4.</div>
+          </div>
+          <div style="padding:16px 36px;border-bottom:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;background:var(--navy);">
+            <div style="font-family:var(--ff-mono);font-size:13px;color:var(--gold);flex-shrink:0;min-width:200px;">/actuator/info</div>
+            <div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);line-height:1.4;">Custom metadata: app version, build time, git commit. Populated from application.yml or build plugins.</div>
+          </div>
+          <div style="padding:16px 36px;border-bottom:1px solid var(--border-dark);display:flex;gap:16px;align-items:flex-start;background:var(--navy-alt);">
+            <div style="font-family:var(--ff-mono);font-size:13px;color:var(--gold);flex-shrink:0;min-width:200px;">/actuator/env</div>
+            <div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);line-height:1.4;">Active profiles and resolved config properties. Verify Factor III (config in environment) is working.</div>
+          </div>
+          <div style="padding:16px 36px;display:flex;gap:16px;align-items:flex-start;background:var(--navy);">
+            <div style="font-family:var(--ff-mono);font-size:13px;color:var(--gold);flex-shrink:0;min-width:200px;">/actuator/loggers</div>
+            <div style="font-family:var(--ff-sans);font-size:16px;color:var(--text-muted-dark);line-height:1.4;">View and change log levels at runtime — no restart needed. Invaluable in production debugging.</div>
+          </div>
+        </div>
+        <div class="foot-bar" style="border-top-color:var(--border-dark);"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 18 — Actuator: Health Probes & Graceful Shutdown (dark, two-col) -->
+<section class="slide dark-slide" id="slide-18-act" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Spring Boot Actuator</span><span class="chrome-counter">18 / 21</span></div>
+    <div class="two-col" style="flex:1;">
+      <div class="col-left" style="gap:20px;">
+        <div class="kicker reveal">Kubernetes integration</div>
+        <h2 class="h2 reveal" style="font-size:48px;">Health probes &amp; <em>graceful shutdown</em></h2>
+        <p class="lead reveal" style="font-size:21px;">Kubernetes needs to know when your service is ready to receive traffic and when it is alive. Actuator provides both endpoints out of the box.</p>
+        <div class="reveal">
+          <div style="font-family:var(--ff-mono);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">deployment.yaml — probe config</div>
+          <div class="code-block" style="font-size:13px;"><span class="ck">livenessProbe</span>:
+  <span class="ck">httpGet</span>:
+    <span class="ck">path</span>: <span class="cv">/actuator/health/liveness</span>
+    <span class="ck">port</span>: <span class="cv">8080</span>
+  <span class="ck">initialDelaySeconds</span>: <span class="cv">30</span>
+  <span class="ck">periodSeconds</span>: <span class="cv">10</span>
+<span class="ck">readinessProbe</span>:
+  <span class="ck">httpGet</span>:
+    <span class="ck">path</span>: <span class="cv">/actuator/health/readiness</span>
+    <span class="ck">port</span>: <span class="cv">8080</span>
+  <span class="ck">initialDelaySeconds</span>: <span class="cv">15</span>
+  <span class="ck">periodSeconds</span>: <span class="cv">5</span></div>
+        </div>
+      </div>
+      <div class="col-right" style="gap:20px;">
+        <div class="kicker reveal" style="color:var(--gold);">Factor IX — Disposability</div>
+        <h3 class="h3 reveal" style="color:var(--text-warm);">Graceful shutdown: <em>finish what you started</em></h3>
+        <p class="lead reveal" style="font-size:20px;">When Kubernetes sends SIGTERM, Spring Boot stops accepting new requests and waits for in-flight requests to complete before shutting down.</p>
+        <div class="reveal">
+          <div style="font-family:var(--ff-mono);font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">application.yml</div>
+          <div class="code-block" style="font-size:13px;"><span class="ck">server</span>:
+  <span class="ck">shutdown</span>: <span class="cv">graceful</span>
+
+<span class="ck">spring</span>:
+  <span class="ck">lifecycle</span>:
+    <span class="ck">timeout-per-shutdown-phase</span>: <span class="cv">30s</span>
+
+<span class="cc"># Spring Boot then:</span>
+<span class="cc"># 1. Sets readiness to DOWN</span>
+<span class="cc">#    (Kubernetes stops sending traffic)</span>
+<span class="cc"># 2. Waits up to 30s for in-flight requests</span>
+<span class="cc"># 3. Shuts down cleanly</span></div>
+        </div>
+        <div class="reveal" style="border-top:1px solid var(--border-dark);padding-top:14px;">
+          <p style="font-family:var(--ff-serif);font-style:italic;font-size:19px;color:var(--text-muted-dark);line-height:1.5;">Without graceful shutdown, a pod restart during checkout drops the user's order mid-transaction.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 16 — E-Commerce Architecture Diagram (cream) -->
+<section class="slide cream-slide" id="slide-16" style="background:var(--cream);">
+  <div class="slide-inner">
+    <div class="chrome-bar light"><span class="chrome-label">Running Example</span><span class="chrome-counter light">19 / 21</span></div>
+    <div class="slide-body top" style="padding-top:36px;align-items:center;background:var(--cream);">
+      <div class="kicker reveal" style="align-self:flex-start;">Our example system</div>
+      <h2 class="h2 ink reveal" style="align-self:flex-start;">Four services, <em>one system</em></h2>
+      <!-- Architecture diagram -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0;width:100%;margin-top:16px;" class="reveal-fade">
+        <!-- API Gateway -->
+        <div style="border:1.5px solid var(--gold);background:rgba(200,168,112,0.08);padding:16px 80px;font-family:var(--ff-mono);font-size:16px;color:var(--gold);letter-spacing:0.1em;">API Gateway :8080</div>
+        <!-- Fan-out arrows -->
+        <div style="display:flex;width:900px;justify-content:space-around;position:relative;height:40px;">
+          <div style="position:absolute;top:0;left:50%;width:1px;height:100%;background:var(--border-light);"></div>
+          <div style="position:absolute;top:0;left:12.5%;width:1px;height:100%;background:var(--border-light);"></div>
+          <div style="position:absolute;top:0;left:37.5%;width:1px;height:100%;background:var(--border-light);"></div>
+          <div style="position:absolute;top:0;left:62.5%;width:1px;height:100%;background:var(--border-light);"></div>
+          <div style="position:absolute;top:0;left:87.5%;width:1px;height:100%;background:var(--border-light);"></div>
+          <div style="position:absolute;top:0;left:12.5%;right:12.5%;height:1px;background:var(--border-light);"></div>
+        </div>
+        <!-- Services row -->
+        <div style="display:flex;gap:20px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div style="border:1px solid var(--border-light);background:var(--cream-alt);padding:14px 24px;font-family:var(--ff-mono);font-size:15px;color:var(--ink);letter-spacing:0.06em;min-width:200px;text-align:center;">user-service<br><span style="color:var(--text-hint-light);font-size:13px;">:8081</span></div>
+            <div style="width:1px;height:24px;background:var(--border-light);"></div>
+            <div style="border:1px dashed var(--border-light);padding:10px 20px;font-family:var(--ff-mono);font-size:13px;color:var(--text-hint-light);text-align:center;">users_db</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div style="border:1px solid var(--border-light);background:var(--cream-alt);padding:14px 24px;font-family:var(--ff-mono);font-size:15px;color:var(--ink);letter-spacing:0.06em;min-width:200px;text-align:center;">order-service<br><span style="color:var(--text-hint-light);font-size:13px;">:8082</span></div>
+            <div style="width:1px;height:24px;background:var(--border-light);"></div>
+            <div style="border:1px dashed var(--border-light);padding:10px 20px;font-family:var(--ff-mono);font-size:13px;color:var(--text-hint-light);text-align:center;">orders_db</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div style="border:1px solid var(--border-light);background:var(--cream-alt);padding:14px 24px;font-family:var(--ff-mono);font-size:15px;color:var(--ink);letter-spacing:0.06em;min-width:200px;text-align:center;">inventory-service<br><span style="color:var(--text-hint-light);font-size:13px;">:8083</span></div>
+            <div style="width:1px;height:24px;background:var(--border-light);"></div>
+            <div style="border:1px dashed var(--border-light);padding:10px 20px;font-family:var(--ff-mono);font-size:13px;color:var(--text-hint-light);text-align:center;">inventory_db</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div style="border:1px solid var(--border-light);background:var(--cream-alt);padding:14px 24px;font-family:var(--ff-mono);font-size:15px;color:var(--ink);letter-spacing:0.06em;min-width:200px;text-align:center;">payment-service<br><span style="color:var(--text-hint-light);font-size:13px;">:8084</span></div>
+            <div style="width:1px;height:24px;background:var(--border-light);"></div>
+            <div style="border:1px dashed var(--border-light);padding:10px 20px;font-family:var(--ff-mono);font-size:13px;color:var(--text-hint-light);text-align:center;">payments_db</div>
+          </div>
+        </div>
+        <p style="font-family:var(--ff-serif);font-style:italic;font-size:18px;color:var(--text-muted-light);margin-top:24px;text-align:center;" class="reveal">Each service: independent repo, independent DB, independent deploy. We'll build this system across all 6 modules.</p>
+      </div>
+    </div>
+    <div class="foot-bar light"><span class="foot-label light">Entry-Level Java Engineering Track</span><span class="foot-label light">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 17 — Common Mistakes (dark, two-col table) -->
+<section class="slide dark-slide" id="slide-17" style="background:var(--navy);">
+  <div class="slide-inner">
+    <div class="chrome-bar"><span class="chrome-label">Pitfalls</span><span class="chrome-counter">20 / 21</span></div>
+    <div class="slide-body top" style="padding-top:32px;">
+      <div class="kicker reveal">Learn from others</div>
+      <h2 class="h2 reveal">Pitfalls engineers hit in their <em>first</em> microservice project</h2>
+      <table class="signal-table reveal" style="margin-top:12px;">
+        <thead><tr><th>Mistake</th><th>Better Approach</th></tr></thead>
+        <tbody>
+          <tr><td>Config in code: new URL("http://localhost:8082")</td><td><strong>Environment variable:</strong> ${ORDER_SERVICE_URL}</td></tr>
+          <tr><td>Shared database between services</td><td>Each service owns its schema — communicate via <strong>API or events</strong></td></tr>
+          <tr><td>Session state in memory</td><td>Externalize to <strong>Redis</strong> — services must be stateless</td></tr>
+          <tr><td>Logging to files on disk</td><td>Log to <strong>stdout</strong> — let the platform collect and aggregate</td></tr>
+          <tr><td>One big release every two weeks</td><td>Each service deploys independently when its <strong>pipeline passes</strong></td></tr>
+          <tr><td>Splitting too early ("nano-services")</td><td>Start coarser; split only when a team <strong>feels the friction</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot-bar"><span class="foot-label">Entry-Level Java Engineering Track</span><span class="foot-label">Module 1</span></div>
+  </div>
+</section>
+
+<!-- SLIDE 18 — CLOSING (dark, centered hero) -->
+<section class="slide dark-slide" id="slide-18" style="background:var(--navy);">
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);z-index:2;"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:0 var(--pad-x);gap:var(--gap-lg);text-align:center;">
+    <div class="kicker reveal" style="justify-content:center;">What to remember from Module 1</div>
+    <h1 class="h1 reveal" style="font-size:72px;line-height:1.05;max-width:1200px;">Key <em>Takeaways</em></h1>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-dark);width:100%;max-width:1400px;" class="reveal-fade">
+      <div style="background:var(--navy-alt);padding:36px 44px;text-align:left;border-bottom:1px solid var(--border-dark);border-right:1px solid var(--border-dark);">
+        <div style="font-family:var(--ff-mono);font-size:32px;color:var(--gold);font-weight:500;line-height:1;margin-bottom:14px;">01</div>
+        <div style="font-family:var(--ff-serif);font-size:22px;color:var(--text-warm);line-height:1.4;">Microservices trade simplicity for scalability and autonomy — <em>know the cost</em></div>
+      </div>
+      <div style="background:var(--navy);padding:36px 44px;text-align:left;border-bottom:1px solid var(--border-dark);">
+        <div style="font-family:var(--ff-mono);font-size:32px;color:var(--gold);font-weight:500;line-height:1;margin-bottom:14px;">02</div>
+        <div style="font-family:var(--ff-serif);font-size:22px;color:var(--text-warm);line-height:1.4;">12-Factor App gives you the vocabulary for what <em>"well-behaved"</em> means in the cloud</div>
+      </div>
+      <div style="background:var(--navy);padding:36px 44px;text-align:left;border-right:1px solid var(--border-dark);">
+        <div style="font-family:var(--ff-mono);font-size:32px;color:var(--gold);font-weight:500;line-height:1;margin-bottom:14px;">03</div>
+        <div style="font-family:var(--ff-serif);font-size:22px;color:var(--text-warm);line-height:1.4;">Spring Boot was designed for this model — embedded server, <em>Actuator</em>, profiles, graceful shutdown</div>
+      </div>
+      <div style="background:var(--navy-alt);padding:36px 44px;text-align:left;">
+        <div style="font-family:var(--ff-mono);font-size:32px;color:var(--gold);font-weight:500;line-height:1;margin-bottom:14px;">04</div>
+        <div style="font-family:var(--ff-serif);font-size:22px;color:var(--text-warm);line-height:1.4;">The e-commerce example is your <em>reference system</em> for the rest of the course</div>
+      </div>
+    </div>
+    <div style="font-family:var(--ff-mono);font-size:var(--sz-label);letter-spacing:0.18em;text-transform:uppercase;color:var(--text-hint-dark);" class="reveal">Next &#x2192; Module 2: Inter-Service Communication (REST + Messaging)</div>
+  </div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--border-dark);"></div>
+</section>
+</main>
+</div>
+
+<!-- DECK CONTROLS -->
+<div class="deck-controls">
+  <button class="nav-btn" id="prevBtn">&#x2190; PREV</button>
+  <span class="slide-counter-ui" id="slideCounterUI">1 / 21</span>
+  <button class="nav-btn" id="nextBtn">NEXT &#x2192;</button>
+</div>
+
+<!-- INLINE EDIT -->
+<div class="edit-hotzone" id="editHotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">&#x270F;&#xFE0F;</button>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER — Signal
+   =========================================== */
+(function() {
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var current = 0;
+  var stage = document.getElementById('deckStage');
+  var counterUI = document.getElementById('slideCounterUI');
+
+  /* Stage scaling — fixed 1920x1080 */
+  function scaleStage() {
+    var factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    var tx = (window.innerWidth - 1920 * factor) / 2;
+    var ty = (window.innerHeight - 1080 * factor) / 2;
+    stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + factor + ')';
+  }
+  scaleStage();
+  window.addEventListener('resize', scaleStage);
+
+  /* Show slide */
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(idx, total - 1));
+    slides[current].classList.remove('active');
+    current = idx;
+    slides[current].classList.add('active');
+    counterUI.textContent = (current + 1) + ' / ' + total;
+  }
+
+  function next() { showSlide(current + 1); }
+  function prev() { showSlide(current - 1); }
+
+  /* Keyboard navigation */
+  document.addEventListener('keydown', function(e) {
+    if (editor.isActive && e.target && e.target.getAttribute('contenteditable')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) { editor.toggleEditMode(); }
+  });
+
+  /* Button navigation */
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+
+  /* Touch / swipe */
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+  }, { passive: true });
+
+  /* Mouse wheel */
+  var wheelLock = false;
+  document.addEventListener('wheel', function(e) {
+    if (wheelLock) return;
+    wheelLock = true;
+    e.deltaY > 0 ? next() : prev();
+    setTimeout(function() { wheelLock = false; }, 600);
+  }, { passive: true });
+
+  /* ===========================================
+     INLINE EDITOR
+     =========================================== */
+  var editor = {
+    isActive: false,
+    editables: [],
+    savedContent: {},
+
+    toggleEditMode: function() {
+      this.isActive = !this.isActive;
+      var toggle = document.getElementById('editToggle');
+      toggle.classList.toggle('active', this.isActive);
+
+      if (this.isActive) {
+        /* Make text elements editable */
+        this.editables = Array.from(document.querySelectorAll(
+          '.slide h1, .slide h2, .slide h3, .slide p, .slide li, .slide td, .slide .card-title, .slide .card-body, .slide .kicker, .slide .section-title, .slide .section-sub'
+        ));
+        this.editables.forEach(function(el) {
+          el.setAttribute('contenteditable', 'true');
+        });
+      } else {
+        this.editables.forEach(function(el) {
+          el.removeAttribute('contenteditable');
+        });
+        this.saveToStorage();
+      }
+    },
+
+    saveToStorage: function() {
+      try {
+        localStorage.setItem('signal-deck-content', document.getElementById('deckStage').innerHTML);
+      } catch(e) {}
+    },
+
+    loadFromStorage: function() {
+      try {
+        var saved = localStorage.getItem('signal-deck-content');
+        if (saved) {
+          document.getElementById('deckStage').innerHTML = saved;
+          /* Re-query slides after DOM replacement */
+          slides = document.querySelectorAll('.slide');
+          total = slides.length;
+          showSlide(0);
+        }
+      } catch(e) {}
+    }
+  };
+
+  /* Hotzone hover with 400ms grace period */
+  var hotzone = document.getElementById('editHotzone');
+  var editToggle = document.getElementById('editToggle');
+  var hideTimeout = null;
+
+  hotzone.addEventListener('mouseenter', function() {
+    clearTimeout(hideTimeout);
+    editToggle.classList.add('show');
+  });
+  hotzone.addEventListener('mouseleave', function() {
+    hideTimeout = setTimeout(function() {
+      if (!editor.isActive) editToggle.classList.remove('show');
+    }, 400);
+  });
+  editToggle.addEventListener('mouseenter', function() { clearTimeout(hideTimeout); });
+  editToggle.addEventListener('mouseleave', function() {
+    hideTimeout = setTimeout(function() {
+      if (!editor.isActive) editToggle.classList.remove('show');
+    }, 400);
+  });
+  hotzone.addEventListener('click', function() { editor.toggleEditMode(); });
+  document.getElementById('editToggle').addEventListener('click', function() { editor.toggleEditMode(); });
+
+  /* Ctrl+S to save */
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      if (editor.isActive) { editor.saveToStorage(); }
+    }
+  });
+
+  /* Init */
+  showSlide(0);
+
+})();
+</script>
+</body>
+</html>
