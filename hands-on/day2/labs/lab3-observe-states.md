@@ -28,10 +28,15 @@ curl -s http://localhost:8082/actuator/circuitbreakerevents | jq ".circuitBreake
 
 ## Step 2 — Force failures to open the circuit
 
-Stop inventory-service. Fire requests until the circuit opens:
+Stop inventory-service. Fire requests until the circuit opens — paste all lines at once in Git Bash:
 
 ```bash
-for /l %i in (1,1,6) do curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" & echo Request %i sent
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}"
 ```
 
 Check state:
@@ -63,6 +68,11 @@ Look for `"type": "STATE_TRANSITION"` — that's the circuit opening.
 
 Wait 10 seconds (the `waitDurationInOpenState`). The circuit moves to HALF-OPEN automatically.
 
+> **How it works:** `automaticTransitionFromOpenToHalfOpenEnabled: true` is set in
+> `application.yml`. Without it, Resilience4j only transitions to HALF-OPEN lazily
+> when the next request arrives — the circuit would appear stuck in OPEN.
+> With it, a background thread moves the state after 10 seconds regardless.
+
 ```bash
 curl -s http://localhost:8082/actuator/circuitbreakers | jq ".circuitBreakers.\"inventory-service\".state"
 # "HALF_OPEN"
@@ -84,20 +94,41 @@ cd hands-on/day1/inventory-service
 mvn spring-boot:run
 ```
 
-Wait 10 seconds for the next HALF-OPEN window.
+Wait 10 seconds for the next HALF-OPEN window, then confirm the state:
 
-This time the 2 probe calls succeed. The circuit closes.
+```bash
+curl -s http://localhost:8082/actuator/circuitbreakers | jq ".circuitBreakers.\"inventory-service\".state"
+# "HALF_OPEN"
+```
+
+Now **you** fire the 2 probe calls — these are normal order requests, but in HALF-OPEN state
+Resilience4j lets them through to the real inventory-service instead of short-circuiting to
+the fallback. If both succeed, the circuit closes. If either fails, it goes back to OPEN.
+
+```bash
+# Probe call 1
+curl -s -X POST http://localhost:8082/orders \
+  -H "Content-Type: application/json" \
+  -d "{\"productId\": 1, \"quantity\": 1}" | jq ".status"
+
+# Probe call 2
+curl -s -X POST http://localhost:8082/orders \
+  -H "Content-Type: application/json" \
+  -d "{\"productId\": 1, \"quantity\": 1}" | jq ".status"
+```
+
+Both should return `"CONFIRMED"` — inventory-service is back up and the calls succeeded.
+
+Check the circuit closed:
 
 ```bash
 curl -s http://localhost:8082/actuator/circuitbreakers | jq ".circuitBreakers.\"inventory-service\".state"
 # "CLOSED"
 ```
 
-Place an order — it should be CONFIRMED:
-```bash
-curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" | jq ".status"
-# "CONFIRMED"
-```
+> **Why exactly 2?** `permittedNumberOfCallsInHalfOpenState: 2` in `application.yml`.
+> A 3rd request fired while still in HALF-OPEN would be rejected immediately (fallback fires)
+> — Resilience4j won't let more than 2 through until it decides to close or re-open.
 
 ---
 

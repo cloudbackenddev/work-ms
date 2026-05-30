@@ -63,6 +63,9 @@ resilience4j:
           - org.springframework.web.client.HttpServerErrorException
         # Register health indicator so state shows in /actuator/health
         registerHealthIndicator: true
+        # Automatically move to HALF-OPEN after waitDurationInOpenState
+        # Without this, the transition only happens when the next request arrives
+        automaticTransitionFromOpenToHalfOpenEnabled: true
 
   retry:
     instances:

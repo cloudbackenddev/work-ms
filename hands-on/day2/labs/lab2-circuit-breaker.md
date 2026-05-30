@@ -36,7 +36,9 @@ curl -s http://localhost:8082/actuator/health | jq ".components.circuitBreakers"
 ## Step 2 — Place a normal order (circuit CLOSED)
 
 ```bash
-curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 2}"
+curl -s -X POST http://localhost:8082/orders \
+  -H "Content-Type: application/json" \
+  -d "{\"productId\": 1, \"quantity\": 2}"
 ```
 
 **Expected log in order-service terminal:**
@@ -51,10 +53,17 @@ INFO  [order-service] c.e.o.service.OrderService - Order placed: id=1 productId=
 
 Stop inventory-service (Ctrl+C).
 
-Now fire 5 requests quickly:
+Now fire 5 requests — paste all lines at once in Git Bash:
+
 ```bash
-for /l %i in (1,1,5) do curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}"
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}" &
+curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}"
 ```
+
+> **Note:** Use `&` to background each request in Git Bash — not `for /l` (that's CMD syntax).
 
 **Expected:** First few requests retry 3 times each (you'll see retry log lines),
 then fail. After the failure threshold (60% of 5 calls), the circuit opens.
@@ -95,8 +104,11 @@ curl -s http://localhost:8082/actuator/health | jq ".components.circuitBreakers"
 ## Step 5 — Observe fast-fail while OPEN
 
 With the circuit OPEN, fire another request:
+
 ```bash
-curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}"
+curl -s -X POST http://localhost:8082/orders \
+  -H "Content-Type: application/json" \
+  -d "{\"productId\": 1, \"quantity\": 1}"
 ```
 
 **Expected:** Response is immediate (< 100ms). No network call is made.
@@ -124,8 +136,12 @@ curl -s http://localhost:8082/actuator/health | jq ".components.circuitBreakers.
 After successful probes, state returns to `CLOSED`.
 
 Place a new order — it should be `CONFIRMED` again:
+
 ```bash
-curl -s -X POST http://localhost:8082/orders -H "Content-Type: application/json" -d "{\"productId\": 1, \"quantity\": 1}"
+curl -s -X POST http://localhost:8082/orders \
+  -H "Content-Type: application/json" \
+  -d "{\"productId\": 1, \"quantity\": 1}"
+
 curl -s http://localhost:8082/orders | jq ".[].status"
 ```
 

@@ -128,6 +128,18 @@ public class InventoryController {
         return ResponseEntity.ok(updated);
     }
 
+    /**
+     * Simulates a slow inventory-service — used for Lab 1 only.
+     * Remove after the lab.
+     */
+    @GetMapping("/slow/{id}")
+    public ResponseEntity<Product> slowGetProduct(@PathVariable Long id)
+            throws InterruptedException {
+        log.warn("Slow endpoint called for id={} — sleeping 8 seconds", id);
+        Thread.sleep(8_000);
+        return ResponseEntity.ok(inventoryService.getProductById(id));
+    }
+
     // ── Exception handlers ────────────────────────────────────────────────────
 
     @ExceptionHandler(ProductNotFoundException.class)

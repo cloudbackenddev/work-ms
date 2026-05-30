@@ -46,8 +46,7 @@ Press `E` to enter inline edit mode.
 │           ├── lab1-cascading-failure.md
 │           ├── lab2-circuit-breaker.md
 │           ├── lab3-observe-states.md
-│           ├── lab4-structured-logging.md
-│           └── lab5-idempotency.md
+│           └── lab4-idempotency.md
 │
 └── exercises/
     ├── day1/

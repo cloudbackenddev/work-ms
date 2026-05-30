@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:ordersdb;DB_CLOSE_DELAY=-1}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+  # Intentionally tiny thread pool so 5 concurrent requests exhaust it
+  tomcat:
+    threads:
+      max: 5
+      min-spare: 1
+
+# Factor III: inventory-service URL from environment
+inventory:
+  service:
+    url: ${INVENTORY_SERVICE_URL:http://localhost:8083}
+
+# Expose health and metrics — needed for Lab 1 observations
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+logging:
+  level:
+    com.example.order: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [${spring.application.name}] %logger{36} - %msg%n"
